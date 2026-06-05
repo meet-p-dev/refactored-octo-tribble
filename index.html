@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="MoneyTrack"/>
+<title>MoneyTrack</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body,#root{height:100%;overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',sans-serif;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
+input,select,button,textarea{font-family:inherit;font-size:16px}
+input:focus,select:focus,textarea:focus{outline:none}
+::-webkit-scrollbar{display:none}
+input[type=color]{-webkit-appearance:none;border:none;cursor:pointer}
+input[type=date]{color-scheme:auto}
+select{-webkit-appearance:none}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useMemo} = React;
+
+const CATS=[
+  {id:"groceries",  label:"Groceries",    icon:"🛒",color:"#4ade80"},
+  {id:"dining",     label:"Dining",       icon:"🍴",color:"#fb923c"},
+  {id:"subscr",     label:"Subscriptions",icon:"📱",color:"#a78bfa"},
+  {id:"transport",  label:"Transport",    icon:"🚗",color:"#60a5fa"},
+  {id:"shopping",   label:"Shopping",     icon:"🏪",color:"#f472b6"},
+  {id:"health",     label:"Health",       icon:"🏥",color:"#34d399"},
+  {id:"entertain",  label:"Entertainment",icon:"🎮",color:"#fbbf24"},
+  {id:"salary",     label:"Salary",       icon:"💼",color:"#22c55e"},
+  {id:"freelance",  label:"Freelance",    icon:"💻",color:"#0ea5e9"},
+  {id:"rent",       label:"Rent / Bills", icon:"🏠",color:"#ef4444"},
+  {id:"other",      label:"Other",        icon:"📦",color:"#9ca3af"},
+];
+const DEFACCS=[
+  {id:"sparkasse",      name:"Sparkasse",      color:"#e11d48",ib:0},
+  {id:"revolut",        name:"Revolut",        color:"#6d28d9",ib:0},
+  {id:"revolut-savings",name:"Revolut Savings",color:"#7c3aed",ib:0},
+  {id:"paypal",         name:"PayPal",         color:"#1d4ed8",ib:0},
+  {id:"friend-loan",    name:"Friend (Loan)",  color:"#059669",ib:0},
+];
+const LT={
+  bg:"#f2f2f7",card:"#fff",cardH:"#f0f0f5",border:"#e5e7eb",
+  txt:"#000",txt2:"#6b7280",txt3:"#aeaeb2",inp:"#fff",inpB:"#d1d5db",
+  acc:"#007aff",green:"#34c759",red:"#ff3b30",cG:"#34c759",cR:"#ff3b30",
+  s:[["#deeaff","#007aff"],["#d4f5df","#1a8f3a"],["#ffdede","#c0392b"]],
+};
+const DK={
+  bg:"#000000",card:"#1c1c1e",cardH:"#2c2c2e",border:"#38383a",
+  txt:"#fff",txt2:"#8e8e93",txt3:"#48484a",inp:"#2c2c2e",inpB:"#48484a",
+  acc:"#0a84ff",green:"#30d158",red:"#ff453a",cG:"#30d158",cR:"#ff453a",
+  s:[["#001533","#4da6ff"],["#002e14","#30d158"],["#2d0000","#ff453a"]],
+};
+
+const LS={
+  g:k=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch{return null}},
+  s:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
+};
+const fmt=n=>new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR"}).format(n||0);
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2);
+const tod=()=>new Date().toISOString().slice(0,10);
+const gc=id=>CATS.find(c=>c.id===id)||{icon:"📦",color:"#9ca3af",label:id||"Other"};
+
+const I={
+  home: c=><svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d="M3 12L12 4l9 8"/><path d="M5 10.5V20h5v-5h4v5h5V10.5"/></svg>,
+  list: c=><svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.7} strokeLinecap="round"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill={c} stroke="none"/><circle cx="4" cy="12" r="1.5" fill={c} stroke="none"/><circle cx="4" cy="18" r="1.5" fill={c} stroke="none"/></svg>,
+  wallet: c=><svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="3"/><path d="M2 7.5L12 3l10 4.5"/><circle cx="17" cy="14" r="1.5" fill={c} stroke="none"/></svg>,
+  chart: c=><svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.7} strokeLinecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
+  plus: (c,s=26)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2.2} strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  edit: c=><svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>,
+  trash: c=><svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>,
+  moon: c=><svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.8} strokeLinecap="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>,
+  sun:  c=><svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.8} strokeLinecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>,
+  srch: c=><svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
+  x:    c=><svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2.2} strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+  back: c=><svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>,
+};
+
+function MiniChart({data,T}){
+  const max=Math.max(...data.flatMap(d=>[d.income,d.spent]),1);
+  const W=300,H=140,bp=20,tp=8,aH=H-bp-tp;
+  const sw=W/data.length,bw=Math.min(sw*.28,10);
+  return(
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H}>
+      {[.33,.66,1].map(f=>(
+        <line key={f} x1={0} y1={tp+(1-f)*aH} x2={W} y2={tp+(1-f)*aH} stroke={T.border} strokeWidth={.5}/>
+      ))}
+      {data.map((d,i)=>{
+        const cx=(i+.5)*sw,iH=(d.income/max)*aH,sH=(d.spent/max)*aH;
+        return(
+          <g key={i}>
+            {iH>0&&<rect x={cx-bw-1} y={tp+aH-iH} width={bw} height={iH} fill={T.cG} rx={2}/>}
+            {sH>0&&<rect x={cx+1}   y={tp+aH-sH} width={bw} height={sH} fill={T.cR} rx={2}/>}
+            <text x={cx} y={H-5} textAnchor="middle" fontSize={7.5} fill={T.txt3}>{d.label}</text>
+          </g>
+        );
+      })}
+      <rect x={W-54} y={tp+1}  width={7} height={7} fill={T.cG} rx={1.5}/>
+      <text x={W-44} y={tp+7.5} fontSize={7.5} fill={T.txt2}>Income</text>
+      <rect x={W-54} y={tp+12} width={7} height={7} fill={T.cR} rx={1.5}/>
+      <text x={W-44} y={tp+18.5} fontSize={7.5} fill={T.txt2}>Spent</text>
+    </svg>
+  );
+}
+
+function Sheet({open,onClose,title,T,children}){
+  if(!open) return null;
+  return(
+    <div style={{position:"fixed",inset:0,zIndex:300}}>
+      <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.5)",backdropFilter:"blur(2px)"}} onClick={onClose}/>
+      <div style={{position:"absolute",bottom:0,left:0,right:0,background:T.card,borderRadius:"22px 22px 0 0",paddingBottom:"calc(env(safe-area-inset-bottom) + 12px)",maxHeight:"88vh",display:"flex",flexDirection:"column",boxShadow:"0 -4px 30px rgba(0,0,0,.3)"}}>
+        <div style={{width:36,height:4,background:T.border,borderRadius:99,margin:"12px auto 2px",flexShrink:0}}/>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 20px 10px",flexShrink:0,borderBottom:`1px solid ${T.border}`}}>
+          <span style={{fontWeight:700,fontSize:18,color:T.txt}}>{title}</span>
+          <button onClick={onClose} style={{background:T.cardH,border:"none",borderRadius:99,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>{I.x(T.txt2)}</button>
+        </div>
+        <div style={{overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"16px 20px 4px"}}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Label({text}){
+  return <div style={{fontSize:12,fontWeight:600,color:"#8e8e93",textTransform:"uppercase",letterSpacing:.5,marginBottom:7}}>{text}</div>;
+}
+
+function App(){
+  const sysDark=window.matchMedia?.("(prefers-color-scheme:dark)").matches??false;
+  const [accs,setAccs]         = useState([]);
+  const [txs,setTxs]           = useState([]);
+  const [dark,setDark]         = useState(()=>LS.g("mt-dark")??sysDark);
+  const [tab,setTab]           = useState("home");
+  const [modal,setModal]       = useState(null);
+  const [editId,setEditId]     = useState(null);
+  const [search,setSearch]     = useState("");
+  const [fCat,setFCat]         = useState("");
+  const [fAcc,setFAcc]         = useState("");
+  const [drillCat,setDrillCat] = useState(null);
+  const [ready,setReady]       = useState(false);
+
+  const T=dark?DK:LT;
+  const iTx={date:tod(),type:"expense",amount:"",merchant:"",category:"other",accountId:"",toAccountId:"",notes:""};
+  const iAcc={name:"",color:"#3b82f6",ib:""};
+  const [txForm,setTxForm]   = useState(iTx);
+  const [accForm,setAccForm] = useState(iAcc);
+
+  useEffect(()=>{
+    const a=LS.g("mt-accs")||DEFACCS;
+    const t=LS.g("mt-txs")||[];
+    setAccs(a);setTxs(t);
+    if(!LS.g("mt-accs")) LS.s("mt-accs",DEFACCS);
+    setReady(true);
+  },[]);
+
+  const sa=a=>{setAccs(a);LS.s("mt-accs",a);};
+  const st=t=>{setTxs(t);LS.s("mt-txs",t);};
+  const tgDk=()=>{const nd=!dark;setDark(nd);LS.s("mt-dark",nd);};
+
+  const getBal=aid=>{
+    const a=accs.find(x=>x.id===aid);if(!a)return 0;
+    let b=parseFloat(a.ib)||0;
+    txs.forEach(t=>{
+      const v=parseFloat(t.amount)||0;
+      if(t.type==="income"   &&t.accountId===aid)   b+=v;
+      if(t.type==="expense"  &&t.accountId===aid)   b-=v;
+      if(t.type==="transfer" &&t.accountId===aid)   b-=v;
+      if(t.type==="transfer" &&t.toAccountId===aid) b+=v;
+    });
+    return b;
+  };
+
+  const totBal=useMemo(()=>accs.reduce((s,a)=>s+getBal(a.id),0),[accs,txs]);
+  const mLbl=new Date().toLocaleString("default",{month:"long"});
+  const mSt=useMemo(()=>{
+    const k=new Date().toISOString().slice(0,7);
+    const m=txs.filter(t=>t.date.startsWith(k));
+    return{
+      inc:m.filter(t=>t.type==="income") .reduce((s,t)=>s+parseFloat(t.amount),0),
+      spt:m.filter(t=>t.type==="expense").reduce((s,t)=>s+parseFloat(t.amount),0),
+    };
+  },[txs]);
+
+  const chartD=useMemo(()=>{
+    const now=new Date();
+    return Array.from({length:12},(_,i)=>{
+      const d=new Date(now.getFullYear(),now.getMonth()-(11-i),1);
+      const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+      return{
+        label:d.toLocaleString("default",{month:"short"}),
+        income:txs.filter(t=>t.type==="income" &&t.date.startsWith(k)).reduce((s,t)=>s+parseFloat(t.amount),0),
+        spent: txs.filter(t=>t.type==="expense"&&t.date.startsWith(k)).reduce((s,t)=>s+parseFloat(t.amount),0),
+      };
+    });
+  },[txs]);
+
+  const catD=useMemo(()=>{
+    const map={};
+    txs.filter(t=>t.type==="expense").forEach(t=>{
+      const c=t.category||"other";
+      if(!map[c])map[c]={total:0,merchants:{}};
+      map[c].total+=parseFloat(t.amount)||0;
+      const m=t.merchant||"Unknown";
+      map[c].merchants[m]=(map[c].merchants[m]||0)+(parseFloat(t.amount)||0);
+    });
+    return Object.entries(map).sort(([,a],[,b])=>b.total-a.total).map(([id,v])=>({id,...v,...gc(id)}));
+  },[txs]);
+
+  const filtTxs=useMemo(()=>
+    [...txs].sort((a,b)=>b.date.localeCompare(a.date)).filter(t=>{
+      if(search&&!t.merchant?.toLowerCase().includes(search.toLowerCase()))return false;
+      if(fCat&&t.category!==fCat)return false;
+      if(fAcc&&t.accountId!==fAcc)return false;
+      return true;
+    }),[txs,search,fCat,fAcc]);
+
+  const recTxs=useMemo(()=>[...txs].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8),[txs]);
+
+  const closeM=()=>{setModal(null);setEditId(null);setTxForm(iTx);setAccForm(iAcc);};
+  const doAddTx=()=>{
+    if(!txForm.amount||!txForm.accountId)return;
+    const tx={...txForm,id:editId||uid(),amount:parseFloat(txForm.amount)};
+    st(editId?txs.map(t=>t.id===editId?tx:t):[tx,...txs]);
+    closeM();
+  };
+  const delTx=id=>st(txs.filter(t=>t.id!==id));
+  const doEditTx=t=>{setTxForm({...t});setEditId(t.id);setModal("tx");};
+  const doAddAcc=()=>{
+    if(!accForm.name)return;
+    const a={id:editId||uid(),...accForm,ib:parseFloat(accForm.ib)||0};
+    sa(editId?accs.map(x=>x.id===editId?{...x,...a}:x):[...accs,a]);
+    closeM();
+  };
+  const delAcc=id=>sa(accs.filter(a=>a.id!==id));
+  const doEditAcc=a=>{setAccForm({name:a.name,color:a.color,ib:String(a.ib)});setEditId(a.id);setModal("acc");};
+  const openAdd=()=>{setTxForm({...iTx,accountId:accs[0]?.id||""});setEditId(null);setModal("tx");};
+
+  const net=mSt.inc-mSt.spt,netPos=net>=0;
+  const mxCat=catD[0]?.total||1;
+
+  const inp={display:"block",width:"100%",background:T.inp,color:T.txt,border:`1.5px solid ${T.inpB}`,borderRadius:12,padding:"13px 14px",fontSize:16,outline:"none",WebkitAppearance:"none",appearance:"none"};
+
+  if(!ready)return(
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100dvh",background:T.bg,gap:12}}>
+      <div style={{fontSize:52}}>💰</div>
+      <div style={{color:T.txt2,fontSize:14}}>Loading MoneyTrack…</div>
+    </div>
+  );
+
+  const TABS=[
+    {id:"home", lbl:"Home",     ic:I.home},
+    {id:"txs",  lbl:"Activity", ic:I.list},
+    {id:"accs", lbl:"Accounts", ic:I.wallet},
+    {id:"stats",lbl:"Analytics",ic:I.chart},
+  ];
+
+  return(
+    <div style={{display:"flex",flexDirection:"column",height:"100dvh",background:T.bg,color:T.txt}}>
+
+      {/* Header */}
+      <div style={{background:T.card,flexShrink:0,paddingTop:"env(safe-area-inset-top)",boxShadow:dark?"0 .5px 0 rgba(255,255,255,.07)":"0 .5px 0 rgba(0,0,0,.1)"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 20px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:9}}>
+            <span style={{fontSize:26}}>💰</span>
+            <span style={{fontWeight:700,fontSize:19,letterSpacing:-.4}}>MoneyTrack</span>
+          </div>
+          <button onClick={tgDk} style={{background:T.bg,border:`1px solid ${T.border}`,borderRadius:10,padding:"7px 10px",cursor:"pointer",display:"flex",alignItems:"center",color:T.acc}}>
+            {dark?I.sun(T.acc):I.moon(T.acc)}
+          </button>
+        </div>
+      </div>
+
+      {/* Scrollable content */}
+      <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+        <div style={{padding:"14px 16px 0"}}>
+
+          {/* ══ HOME ══ */}
+          {tab==="home"&&<>
+            {/* Hero balance card */}
+            <div style={{background:`linear-gradient(135deg,${T.acc},${dark?"#0050cc":"#0051d5"})`,borderRadius:22,padding:"22px 20px 18px",marginBottom:14,color:"#fff",boxShadow:"0 6px 24px rgba(0,122,255,.35)"}}>
+              <div style={{fontSize:13,opacity:.8,fontWeight:500,marginBottom:2}}>Total Balance</div>
+              <div style={{fontSize:38,fontWeight:700,letterSpacing:-.8,marginBottom:18}}>{fmt(totBal)}</div>
+              <div style={{display:"flex",gap:0,background:"rgba(255,255,255,.15)",borderRadius:14,overflow:"hidden"}}>
+                {[["+"+fmt(mSt.inc),"Income"],["-"+fmt(mSt.spt),"Spent"],[(netPos?"+":"")+fmt(net),"Net"]].map(([val,lbl],i)=>(
+                  <div key={lbl} style={{flex:1,padding:"10px 0",textAlign:"center",borderLeft:i>0?"1px solid rgba(255,255,255,.2)":"none"}}>
+                    <div style={{fontSize:14,fontWeight:600}}>{val}</div>
+                    <div style={{fontSize:11,opacity:.75,marginTop:1}}>{lbl} · {mLbl.slice(0,3)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Chart */}
+            <div style={{background:T.card,borderRadius:18,padding:"14px 14px 10px",marginBottom:14}}>
+              <div style={{fontWeight:600,fontSize:15,marginBottom:10}}>Income vs Expenses</div>
+              <MiniChart data={chartD} T={T}/>
+            </div>
+
+            {/* Recent transactions */}
+            <div style={{background:T.card,borderRadius:18,marginBottom:14,overflow:"hidden"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px 10px"}}>
+                <span style={{fontWeight:600,fontSize:15}}>Recent</span>
+                <button onClick={()=>setTab("txs")} style={{background:"none",border:"none",color:T.acc,fontSize:14,cursor:"pointer",fontWeight:500,padding:0}}>See all</button>
+              </div>
+              {recTxs.length===0
+                ? <div style={{padding:"4px 16px 16px",color:T.txt3,fontSize:14}}>No transactions yet</div>
+                : recTxs.map((t,i)=>{
+                    const c=gc(t.category),a=accs.find(x=>x.id===t.accountId);
+                    return(
+                      <div key={t.id} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 16px",borderTop:i>0?`1px solid ${T.border}`:"none"}}>
+                        <div style={{width:42,height:42,borderRadius:13,background:c.color+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:21,flexShrink:0}}>{c.icon}</div>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontWeight:600,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.merchant||"Unknown"}</div>
+                          <div style={{fontSize:12,color:T.txt2}}>{a?.name||"?"} · {t.date}</div>
+                        </div>
+                        <div style={{fontWeight:700,fontSize:16,color:t.type==="income"?T.green:t.type==="expense"?T.red:T.txt2,flexShrink:0}}>
+                          {t.type==="income"?"+":t.type==="expense"?"−":"⇄"}{fmt(t.amount)}
+                        </div>
+                      </div>
+                    );
+                  })
+              }
+            </div>
+
+            {/* Top categories */}
+            <div style={{background:T.card,borderRadius:18,padding:"14px 16px",marginBottom:90}}>
+              <div style={{fontWeight:600,fontSize:15,marginBottom:12}}>Top Categories</div>
+              {catD.length===0
+                ? <div style={{color:T.txt3,fontSize:14}}>No spending yet</div>
+                : catD.slice(0,5).map(c=>(
+                    <div key={c.id} style={{marginBottom:11}}>
+                      <div style={{display:"flex",justifyContent:"space-between",fontSize:14,marginBottom:5}}>
+                        <span style={{color:T.txt2}}>{c.icon} {c.label}</span>
+                        <span style={{fontWeight:600,color:T.txt}}>{fmt(c.total)}</span>
+                      </div>
+                      <div style={{height:5,background:T.border,borderRadius:99}}>
+                        <div style={{height:"100%",borderRadius:99,background:c.color,width:`${(c.total/mxCat)*100}%`,transition:"width .4s"}}/>
+                      </div>
+                    </div>
+                  ))
+              }
+            </div>
+          </>}
+
+          {/* ══ ACTIVITY ══ */}
+          {tab==="txs"&&<>
+            <div style={{position:"relative",marginBottom:10}}>
+              <div style={{position:"absolute",left:13,top:"50%",transform:"translateY(-50%)"}}>{I.srch(T.txt3)}</div>
+              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search merchant…"
+                style={{display:"block",width:"100%",background:T.card,color:T.txt,border:"none",borderRadius:13,padding:"12px 40px 12px 38px",fontSize:16,outline:"none"}}/>
+              {search&&<button onClick={()=>setSearch("")} style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center"}}>{I.x(T.txt3)}</button>}
+            </div>
+
+            <div style={{display:"flex",gap:8,marginBottom:10,overflowX:"auto",paddingBottom:2}}>
+              <select value={fCat} onChange={e=>setFCat(e.target.value)}
+                style={{background:T.card,color:T.txt,border:"none",borderRadius:10,padding:"9px 14px",fontSize:14,flexShrink:0,outline:"none"}}>
+                <option value="">All categories</option>
+                {CATS.map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
+              </select>
+              <select value={fAcc} onChange={e=>setFAcc(e.target.value)}
+                style={{background:T.card,color:T.txt,border:"none",borderRadius:10,padding:"9px 14px",fontSize:14,flexShrink:0,outline:"none"}}>
+                <option value="">All accounts</option>
+                {accs.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
+              </select>
+            </div>
+
+            {search&&filtTxs.length>0&&(
+              <div style={{background:dark?"#001533":"#deeaff",borderRadius:13,padding:"10px 14px",marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:14}}>
+                <span style={{fontWeight:600,color:T.acc}}>"{search}"</span>
+                <span style={{color:T.txt2}}>{filtTxs.length} txs · <strong style={{color:T.acc}}>{fmt(filtTxs.filter(t=>t.type==="expense").reduce((s,t)=>s+parseFloat(t.amount),0))}</strong></span>
+              </div>
+            )}
+
+            <div style={{background:T.card,borderRadius:18,overflow:"hidden",marginBottom:90}}>
+              {filtTxs.length===0
+                ? <div style={{padding:24,color:T.txt3,textAlign:"center",fontSize:14}}>No transactions found</div>
+                : filtTxs.map((t,i)=>{
+                    const c=gc(t.category),a=accs.find(x=>x.id===t.accountId);
+                    return(
+                      <div key={t.id} style={{display:"flex",alignItems:"center",gap:12,padding:"13px 16px",borderTop:i>0?`1px solid ${T.border}`:"none"}}>
+                        <div style={{width:44,height:44,borderRadius:13,background:c.color+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{c.icon}</div>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontWeight:600,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.merchant||"Unknown"}</div>
+                          <div style={{fontSize:12,color:T.txt2}}>{t.date} · {a?.name||"?"} · {c.label}</div>
+                          {t.notes&&<div style={{fontSize:12,color:T.txt3,fontStyle:"italic",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.notes}</div>}
+                        </div>
+                        <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:5,flexShrink:0}}>
+                          <span style={{fontWeight:700,fontSize:16,color:t.type==="income"?T.green:t.type==="expense"?T.red:T.txt2}}>
+                            {t.type==="income"?"+":t.type==="expense"?"−":"⇄"}{fmt(t.amount)}
+                          </span>
+                          <div style={{display:"flex",gap:10}}>
+                            <button onClick={()=>doEditTx(t)} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2}}>{I.edit(T.acc)}</button>
+                            <button onClick={()=>delTx(t.id)} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2}}>{I.trash(T.red)}</button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+              }
+            </div>
+          </>}
+
+          {/* ══ ACCOUNTS ══ */}
+          {tab==="accs"&&<>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+              <div>
+                <div style={{fontWeight:700,fontSize:20}}>Accounts</div>
+                <div style={{fontSize:13,color:T.txt2,marginTop:1}}>Net total: {fmt(totBal)}</div>
+              </div>
+              <button onClick={()=>{setAccForm(iAcc);setEditId(null);setModal("acc");}}
+                style={{display:"flex",alignItems:"center",gap:6,background:T.acc,color:"#fff",border:"none",borderRadius:13,padding:"10px 16px",fontWeight:600,fontSize:15,cursor:"pointer"}}>
+                {I.plus("#fff",18)} Add
+              </button>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:90}}>
+              {accs.map(a=>{
+                const bal=getBal(a.id),cnt=txs.filter(t=>t.accountId===a.id||t.toAccountId===a.id).length;
+                return(
+                  <div key={a.id} style={{background:T.card,borderRadius:18,padding:"14px 16px",display:"flex",alignItems:"center",gap:14}}>
+                    <div style={{width:50,height:50,borderRadius:15,background:a.color,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:22,flexShrink:0}}>{a.name[0]}</div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontWeight:600,fontSize:16}}>{a.name}</div>
+                      <div style={{fontSize:12,color:T.txt2,marginTop:2}}>{cnt} transactions · initial {fmt(a.ib)}</div>
+                    </div>
+                    <div style={{textAlign:"right",flexShrink:0}}>
+                      <div style={{fontWeight:700,fontSize:18,color:bal>=0?T.green:T.red}}>{fmt(bal)}</div>
+                      <div style={{display:"flex",gap:12,justifyContent:"flex-end",marginTop:5}}>
+                        <button onClick={()=>doEditAcc(a)} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2}}>{I.edit(T.acc)}</button>
+                        <button onClick={()=>delAcc(a.id)} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2}}>{I.trash(T.red)}</button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>}
+
+          {/* ══ ANALYTICS ══ */}
+          {tab==="stats"&&<>
+            <div style={{fontWeight:700,fontSize:20,marginBottom:14}}>Analytics</div>
+            {drillCat?(()=>{
+              const c=catD.find(x=>x.id===drillCat);if(!c)return null;
+              return(<>
+                <button onClick={()=>setDrillCat(null)}
+                  style={{display:"flex",alignItems:"center",gap:4,background:"none",border:"none",color:T.acc,fontSize:15,cursor:"pointer",marginBottom:12,fontWeight:500,padding:0}}>
+                  {I.back(T.acc)} Categories
+                </button>
+                <div style={{background:T.card,borderRadius:18,padding:"16px",marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
+                  <span style={{fontSize:36}}>{c.icon}</span>
+                  <div>
+                    <div style={{fontWeight:700,fontSize:17}}>{c.label}</div>
+                    <div style={{fontSize:13,color:T.txt2}}>{fmt(c.total)} total · {Object.keys(c.merchants).length} merchants</div>
+                  </div>
+                </div>
+                <div style={{background:T.card,borderRadius:18,overflow:"hidden",marginBottom:90}}>
+                  {Object.entries(c.merchants).sort(([,a],[,b])=>b-a).map(([m,tot],i)=>{
+                    const cnt=txs.filter(t=>t.merchant===m&&t.category===drillCat).length;
+                    return(
+                      <div key={m} onClick={()=>{setSearch(m);setFCat("");setTab("txs");setDrillCat(null);}}
+                        style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",borderTop:i>0?`1px solid ${T.border}`:"none",cursor:"pointer",WebkitTapHighlightColor:"transparent"}}
+                        onTouchStart={e=>e.currentTarget.style.background=T.cardH}
+                        onTouchEnd={e=>e.currentTarget.style.background="transparent"}>
+                        <div>
+                          <div style={{fontWeight:600,fontSize:15}}>{m}</div>
+                          <div style={{fontSize:12,color:T.txt2,marginTop:1}}>{cnt} transactions · tap to filter</div>
+                        </div>
+                        <span style={{fontWeight:700,color:T.red,fontSize:16}}>{fmt(tot)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>);
+            })():(
+              catD.length===0
+                ? <div style={{color:T.txt3,fontSize:14}}>No spending data yet. Add some transactions!</div>
+                : <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:90}}>
+                    {catD.map(c=>(
+                      <div key={c.id} onClick={()=>setDrillCat(c.id)}
+                        style={{background:T.card,borderRadius:18,padding:"14px 16px",display:"flex",alignItems:"center",gap:13,cursor:"pointer"}}
+                        onTouchStart={e=>e.currentTarget.style.background=T.cardH}
+                        onTouchEnd={e=>e.currentTarget.style.background=T.card}>
+                        <div style={{width:48,height:48,borderRadius:14,background:c.color+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{c.icon}</div>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+                            <span style={{fontWeight:600,fontSize:15}}>{c.label}</span>
+                            <span style={{fontWeight:700,fontSize:15}}>{fmt(c.total)}</span>
+                          </div>
+                          <div style={{height:5,background:T.border,borderRadius:99}}>
+                            <div style={{height:"100%",borderRadius:99,background:c.color,width:`${(c.total/mxCat)*100}%`}}/>
+                          </div>
+                          <div style={{fontSize:12,color:T.txt3,marginTop:4}}>{Object.keys(c.merchants).length} merchants · tap to explore</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+            )}
+          </>}
+
+        </div>
+      </div>
+
+      {/* FAB */}
+      <button onClick={openAdd}
+        style={{position:"fixed",right:20,bottom:"calc(env(safe-area-inset-bottom) + 74px)",width:58,height:58,borderRadius:29,background:T.acc,border:"none",boxShadow:"0 4px 20px rgba(0,122,255,.45)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
+        {I.plus("#fff",28)}
+      </button>
+
+      {/* Bottom Tab Bar */}
+      <div style={{background:T.card,flexShrink:0,paddingBottom:"env(safe-area-inset-bottom)",boxShadow:dark?"0 -.5px 0 rgba(255,255,255,.07)":"0 -.5px 0 rgba(0,0,0,.1)"}}>
+        <div style={{display:"flex",padding:"4px 0 2px"}}>
+          {TABS.map(({id,lbl,ic})=>{
+            const act=tab===id,col=act?T.acc:T.txt3;
+            return(
+              <button key={id} onClick={()=>setTab(id)}
+                style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2,background:"none",border:"none",cursor:"pointer",padding:"8px 0 6px",color:col}}>
+                {ic(col)}
+                <span style={{fontSize:10,fontWeight:act?600:400}}>{lbl}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Transaction Sheet */}
+      <Sheet open={modal==="tx"} onClose={closeM} title={editId?"Edit Transaction":"New Transaction"} T={T}>
+        <div style={{display:"flex",gap:8,marginBottom:18}}>
+          {[["expense","💸 Expense"],["income","💰 Income"],["transfer","🔄 Transfer"]].map(([v,l])=>(
+            <button key={v} onClick={()=>setTxForm(f=>({...f,type:v}))}
+              style={{flex:1,padding:"11px 4px",borderRadius:13,border:`2px solid ${txForm.type===v?T.acc:T.border}`,background:txForm.type===v?T.acc:"transparent",color:txForm.type===v?"#fff":T.txt2,fontWeight:600,fontSize:13,cursor:"pointer"}}>
+              {l}
+            </button>
+          ))}
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+          <div>
+            <Label text="Amount (€)"/>
+            <input type="number" step="0.01" min="0" placeholder="0.00"
+              value={txForm.amount} onChange={e=>setTxForm(f=>({...f,amount:e.target.value}))} style={inp}/>
+          </div>
+          <div>
+            <Label text="Date"/>
+            <input type="date" value={txForm.date} onChange={e=>setTxForm(f=>({...f,date:e.target.value}))}
+              style={{...inp,colorScheme:dark?"dark":"light"}}/>
+          </div>
+        </div>
+        <div style={{marginBottom:14}}>
+          <Label text="Merchant / Payee"/>
+          <input type="text" placeholder="e.g. Kaufland, Apple Music…"
+            value={txForm.merchant} onChange={e=>setTxForm(f=>({...f,merchant:e.target.value}))} style={inp}/>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+          <div>
+            <Label text="Account"/>
+            <select value={txForm.accountId} onChange={e=>setTxForm(f=>({...f,accountId:e.target.value}))} style={inp}>
+              <option value="">Select…</option>
+              {accs.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
+            </select>
+          </div>
+          {txForm.type==="transfer"?(
+            <div>
+              <Label text="To Account"/>
+              <select value={txForm.toAccountId} onChange={e=>setTxForm(f=>({...f,toAccountId:e.target.value}))} style={inp}>
+                <option value="">Select…</option>
+                {accs.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
+              </select>
+            </div>
+          ):(
+            <div>
+              <Label text="Category"/>
+              <select value={txForm.category} onChange={e=>setTxForm(f=>({...f,category:e.target.value}))} style={inp}>
+                {CATS.map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
+              </select>
+            </div>
+          )}
+        </div>
+        <div style={{marginBottom:20}}>
+          <Label text="Notes (optional)"/>
+          <input type="text" placeholder="Any notes…"
+            value={txForm.notes} onChange={e=>setTxForm(f=>({...f,notes:e.target.value}))} style={inp}/>
+        </div>
+        <button onClick={doAddTx} disabled={!txForm.amount||!txForm.accountId}
+          style={{display:"block",width:"100%",background:!txForm.amount||!txForm.accountId?T.txt3:T.acc,color:"#fff",border:"none",borderRadius:15,padding:17,fontWeight:700,fontSize:17,cursor:!txForm.amount||!txForm.accountId?"not-allowed":"pointer",marginBottom:4}}>
+          {editId?"Save Changes":"Add Transaction"}
+        </button>
+      </Sheet>
+
+      {/* Account Sheet */}
+      <Sheet open={modal==="acc"} onClose={closeM} title={editId?"Edit Account":"New Account"} T={T}>
+        <div style={{marginBottom:14}}>
+          <Label text="Account Name"/>
+          <input type="text" placeholder="e.g. N26, Cash, Savings…"
+            value={accForm.name} onChange={e=>setAccForm(f=>({...f,name:e.target.value}))} style={inp}/>
+        </div>
+        <div style={{marginBottom:14}}>
+          <Label text="Starting Balance (€)"/>
+          <input type="number" step="0.01" placeholder="0.00"
+            value={accForm.ib} onChange={e=>setAccForm(f=>({...f,ib:e.target.value}))} style={inp}/>
+        </div>
+        <div style={{marginBottom:22}}>
+          <Label text="Color"/>
+          <input type="color" value={accForm.color} onChange={e=>setAccForm(f=>({...f,color:e.target.value}))}
+            style={{width:"100%",height:52,border:`1.5px solid ${T.inpB}`,borderRadius:13,background:T.inp,cursor:"pointer",padding:4,display:"block"}}/>
+        </div>
+        <button onClick={doAddAcc} disabled={!accForm.name}
+          style={{display:"block",width:"100%",background:!accForm.name?T.txt3:T.acc,color:"#fff",border:"none",borderRadius:15,padding:17,fontWeight:700,fontSize:17,cursor:!accForm.name?"not-allowed":"pointer",marginBottom:4}}>
+          {editId?"Save Changes":"Add Account"}
+        </button>
+      </Sheet>
+
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
