@@ -37,8 +37,9 @@ const CATS=[
   {id:"entertain",label:"Entertainment",icon:"🎮",color:"#fbbf24"},
   {id:"salary",label:"Salary",icon:"💼",color:"#22c55e"},
   {id:"freelance",label:"Freelance",icon:"💻",color:"#0ea5e9"},
-  {id:"rent",label:"Rent / Bills",icon:"🏠",color:"#ef4444"},
+  {id:"rent",label:"Rent",icon:"🏠",color:"#ef4444"},
   {id:"other",label:"Other",icon:"📦",color:"#9ca3af"},
+
 ];
 const DEFACCS=[
   {id:"sparkasse",name:"Sparkasse",color:"#e11d48",ib:0},
@@ -152,6 +153,7 @@ function Toggle({value,onChange,T}){
 function App(){
   const sysDark=window.matchMedia?.("(prefers-color-scheme:dark)").matches??false;
   const [accs,setAccs]         = useState([]);
+  const [cats,setCats]           = useState([]);
   const [txs,setTxs]           = useState([]);
   const [goals,setGoals]       = useState([]);
   const [recurring,setRecurring]= useState([]);
@@ -171,11 +173,12 @@ function App(){
 
   const iTx={date:tod(),type:"expense",amount:"",merchant:"",category:"other",accountId:"",toAccountId:"",notes:"",isSplit:false,splitPeople:2,splitSettled:false};
   const iAcc={name:"",color:"#3b82f6",ib:""};
+  const iCat={label:"",icon:"📦",color:"#9ca3af"};
   const iGoal={name:"",targetAmount:"",savedAmount:"",icon:"🎯",color:"#007aff"};
   const iRec={merchant:"",amount:"",category:"other",accountId:"",type:"expense",dayOfMonth:1,active:true,notes:""};
-
   const [txForm,setTxForm]     = useState(iTx);
   const [accForm,setAccForm]   = useState(iAcc);
+  const [catForm,setCatForm]   = useState(iCat);
   const [goalForm,setGoalForm] = useState(iGoal);
   const [recForm,setRecForm]   = useState(iRec);
 
@@ -186,19 +189,24 @@ function App(){
 
   useEffect(()=>{
     const a=LS.g("mt-accs")||DEFACCS;
+    const c=LS.g("mt-cats")||CATS;
     const t=LS.g("mt-txs")||[];
     const g=LS.g("mt-goals")||[];
     const r=LS.g("mt-recurring")||[];
-    setAccs(a);setTxs(t);setGoals(g);setRecurring(r);
+    setAccs(a);setCats(c);setTxs(t);setGoals(g);setRecurring(r);
     if(!LS.g("mt-accs"))LS.s("mt-accs",DEFACCS);
+    if(!LS.g("mt-cats"))LS.s("mt-cats",CATS);
     setReady(true);
   },[]);
 
   const sa=a=>{setAccs(a);LS.s("mt-accs",a);};
+  const sc=c=>{setCats(c);LS.s("mt-cats",c);};
   const st=t=>{setTxs(t);LS.s("mt-txs",t);};
   const sg=g=>{setGoals(g);LS.s("mt-goals",g);};
   const sr=r=>{setRecurring(r);LS.s("mt-recurring",r);};
   const tgDk=()=>{const nd=!dark;setDark(nd);LS.s("mt-dark",nd);};
+
+  const getCat=id=>cats.find(c=>c.id===id)||CATS.find(c=>c.id===id)||{icon:"📦",color:"#9ca3af",label:id||"Other"};
 
   const getBal=aid=>{
     const a=accs.find(x=>x.id===aid);if(!a)return 0;
@@ -247,8 +255,8 @@ function App(){
       const m=t.merchant||"Unknown";
       map[c].merchants[m]=(map[c].merchants[m]||0)+personalAmt;
     });
-    return Object.entries(map).sort(([,a],[,b])=>b.total-a.total).map(([id,v])=>({id,...v,...gc(id)}));
-  },[txs]);
+    return Object.entries(map).sort(([,a],[,b])=>b.total-a.total).map(([id,v])=>({id,...v,...getCat(id)}));
+  },[txs,cats]);
 
   const filtTxs=useMemo(()=>
     [...txs].sort((a,b)=>b.date.localeCompare(a.date)).filter(t=>{
@@ -293,6 +301,15 @@ function App(){
   };
   const delAcc=id=>sa(accs.filter(a=>a.id!==id));
   const doEditAcc=a=>{setAccForm({name:a.name,color:a.color,ib:String(a.ib)});setEditId(a.id);setModal("acc");};
+  const doAddCat=()=>{
+    if(!catForm.label)return;
+    const newId=editId||catForm.label.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"")||uid();
+    const c={id:newId,...catForm};
+    sc(editId?cats.map(x=>x.id===editId?{...x,...c}:x):[...cats,c]);
+    closeM();
+  };
+  const delCat=id=>sc(cats.filter(c=>c.id!==id));
+  const doEditCat=c=>{setCatForm({label:c.label,icon:c.icon,color:c.color});setEditId(c.id);setModal("cat");};
   const openAdd=()=>{setTxForm({...iTx,accountId:accs[0]?.id||""});setEditId(null);setModal("tx");};
 
   // Goals
@@ -338,7 +355,7 @@ function App(){
 
   // Export / Import
   const doExport=()=>{
-    const data={accs,txs,goals,recurring,exportedAt:new Date().toISOString(),version:"2.0"};
+    const data={accs,cats,txs,goals,recurring,exportedAt:new Date().toISOString(),version:"2.0"};
     const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
     const url=URL.createObjectURL(blob);
     const a=document.createElement("a");
@@ -353,6 +370,7 @@ function App(){
       try{
         const data=JSON.parse(ev.target.result);
         if(data.accs)sa(data.accs);
+        if(data.cats)sc(data.cats);
         if(data.txs)st(data.txs);
         if(data.goals)sg(data.goals);
         if(data.recurring)sr(data.recurring);
@@ -380,6 +398,8 @@ function App(){
   const TABS=[
     {id:"home",lbl:"Home",ic:I.home},
     {id:"txs",lbl:"Activity",ic:I.list},
+    {id:"accs",lbl:"Accounts",ic:I.wallet},
+    {id:"categories",lbl:"Categories",ic:I.goal},
     {id:"splits",lbl:"Splits",ic:I.split},
     {id:"goals",lbl:"Goals",ic:I.goal},
     {id:"stats",lbl:"Analytics",ic:I.chart},
@@ -469,7 +489,7 @@ function App(){
               {recTxs.length===0
                 ?<div style={{padding:"4px 16px 16px",color:T.txt3,fontSize:14}}>No transactions yet</div>
                 :recTxs.map((t,i)=>{
-                  const c=gc(t.category),a=accs.find(x=>x.id===t.accountId);
+                  const c=getCat(t.category),a=accs.find(x=>x.id===t.accountId);
                   const dispAmt=t.isSplit&&t.type==="expense"?parseFloat(t.amount)/t.splitPeople:parseFloat(t.amount);
                   return(
                     <div key={t.id} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 16px",borderTop:i>0?`1px solid ${T.border}`:"none"}}>
@@ -549,7 +569,7 @@ function App(){
             <div style={{display:"flex",gap:8,marginBottom:10,overflowX:"auto",paddingBottom:2}}>
               <select value={fCat} onChange={e=>setFCat(e.target.value)} style={{background:T.card,color:T.txt,border:"none",borderRadius:10,padding:"9px 14px",fontSize:14,flexShrink:0,outline:"none"}}>
                 <option value="">All categories</option>
-                {CATS.map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
+                {cats.map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
               </select>
               <select value={fAcc} onChange={e=>setFAcc(e.target.value)} style={{background:T.card,color:T.txt,border:"none",borderRadius:10,padding:"9px 14px",fontSize:14,flexShrink:0,outline:"none"}}>
                 <option value="">All accounts</option>
@@ -566,7 +586,7 @@ function App(){
               {filtTxs.length===0
                 ?<div style={{padding:24,color:T.txt3,textAlign:"center",fontSize:14}}>No transactions found</div>
                 :filtTxs.map((t,i)=>{
-                  const c=gc(t.category),a=accs.find(x=>x.id===t.accountId);
+                  const c=getCat(t.category),a=accs.find(x=>x.id===t.accountId);
                   const dispAmt=t.isSplit&&t.type==="expense"?parseFloat(t.amount)/t.splitPeople:parseFloat(t.amount);
                   return(
                     <div key={t.id} style={{display:"flex",alignItems:"center",gap:12,padding:"13px 16px",borderTop:i>0?`1px solid ${T.border}`:"none"}}>
@@ -624,7 +644,7 @@ function App(){
               ?<div style={{background:T.card,borderRadius:16,padding:"20px 16px",textAlign:"center",color:T.txt3,fontSize:14,marginBottom:14}}>No pending splits 🎉</div>
               :<div style={{background:T.card,borderRadius:18,overflow:"hidden",marginBottom:14}}>
                 {pendingSplits.map((t,i)=>{
-                  const c=gc(t.category);
+                  const c=getCat(t.category);
                   const full=parseFloat(t.amount)||0;
                   const share=full/t.splitPeople;
                   const owed=full-share;
@@ -677,7 +697,7 @@ function App(){
               ?<div style={{background:T.card,borderRadius:16,padding:"20px 16px",textAlign:"center",color:T.txt3,fontSize:14,marginBottom:90}}>No recurring transactions yet</div>
               :<div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:90}}>
                 {recurring.map(r=>{
-                  const c=gc(r.category);
+                  const c=getCat(r.category);
                   const isDue=recurringDue.find(x=>x.id===r.id);
                   return(
                     <div key={r.id} style={{background:T.card,borderRadius:16,padding:"13px 16px"}}>
@@ -792,6 +812,39 @@ function App(){
                   </div>
                 );
               })}
+            </div>
+          </>}
+
+          {/* ══ CATEGORIES ══ */}
+          {tab==="categories"&&<>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+              <div>
+                <div style={{fontWeight:700,fontSize:20}}>Categories</div>
+                <div style={{fontSize:13,color:T.txt2,marginTop:1}}>{cats.length} categories available</div>
+              </div>
+              <button onClick={()=>{setCatForm(iCat);setEditId(null);setModal("cat");}}
+                style={{display:"flex",alignItems:"center",gap:6,background:T.acc,color:"#fff",border:"none",borderRadius:13,padding:"10px 16px",fontWeight:600,fontSize:15,cursor:"pointer"}}>
+                {I.plus("#fff",18)} Add
+              </button>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:90}}>
+              {cats.length===0
+                ?<div style={{background:T.card,borderRadius:18,padding:"24px",textAlign:"center",color:T.txt3,fontSize:14}}>No categories yet. Add one to tag your expenses.</div>
+                :cats.map(c=>(
+                  <div key={c.id} style={{background:T.card,borderRadius:18,padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:14}}>
+                    <div style={{display:"flex",alignItems:"center",gap:12}}>
+                      <div style={{width:44,height:44,borderRadius:14,background:c.color+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>{c.icon}</div>
+                      <div>
+                        <div style={{fontWeight:600,fontSize:16}}>{c.label}</div>
+                        <div style={{fontSize:12,color:T.txt2}}>{c.id}</div>
+                      </div>
+                    </div>
+                    <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                      <button onClick={()=>doEditCat(c)} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2}}>{I.edit(T.acc)}</button>
+                      <button onClick={()=>delCat(c.id)} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2}}>{I.trash(T.red)}</button>
+                    </div>
+                  </div>
+                ))}
             </div>
           </>}
 
@@ -929,7 +982,7 @@ function App(){
             <div>
               <Label text="Category"/>
               <select value={txForm.category} onChange={e=>setTxForm(f=>({...f,category:e.target.value}))} style={inp}>
-                {CATS.map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
+                {cats.map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
               </select>
             </div>
           )}
@@ -998,6 +1051,29 @@ function App(){
         <button onClick={doAddAcc} disabled={!accForm.name}
           style={{display:"block",width:"100%",background:!accForm.name?T.txt3:T.acc,color:"#fff",border:"none",borderRadius:15,padding:17,fontWeight:700,fontSize:17,cursor:!accForm.name?"not-allowed":"pointer",marginBottom:4}}>
           {editId?"Save Changes":"Add Account"}
+        </button>
+      </Sheet>
+
+      {/* ── Category Sheet ── */}
+      <Sheet open={modal==="cat"} onClose={closeM} title={editId?"Edit Category":"New Category"} T={T}>
+        <div style={{marginBottom:14}}>
+          <Label text="Category Name"/>
+          <input type="text" placeholder="e.g. Dining, Groceries…"
+            value={catForm.label} onChange={e=>setCatForm(f=>({...f,label:e.target.value}))} style={inp}/>
+        </div>
+        <div style={{marginBottom:14}}>
+          <Label text="Icon"/>
+          <input type="text" placeholder="e.g. 🛒"
+            value={catForm.icon} onChange={e=>setCatForm(f=>({...f,icon:e.target.value}))} style={inp}/>
+        </div>
+        <div style={{marginBottom:22}}>
+          <Label text="Color"/>
+          <input type="color" value={catForm.color} onChange={e=>setCatForm(f=>({...f,color:e.target.value}))}
+            style={{width:"100%",height:52,border:`1.5px solid ${T.inpB}`,borderRadius:13,background:T.inp,cursor:"pointer",padding:4,display:"block"}}/>
+        </div>
+        <button onClick={doAddCat} disabled={!catForm.label}
+          style={{display:"block",width:"100%",background:!catForm.label?T.txt3:T.acc,color:"#fff",border:"none",borderRadius:15,padding:17,fontWeight:700,fontSize:17,cursor:!catForm.label?"not-allowed":"pointer",marginBottom:4}}>
+          {editId?"Save Changes":"Save Category"}
         </button>
       </Sheet>
 
@@ -1080,7 +1156,7 @@ function App(){
           <div>
             <Label text="Category"/>
             <select value={recForm.category} onChange={e=>setRecForm(f=>({...f,category:e.target.value}))} style={inp}>
-              {CATS.map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
+              {cats.map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
             </select>
           </div>
         </div>
