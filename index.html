@@ -13,7 +13,7 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body,#root{min-height:100%;height:100%;overflow:hidden}
-body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',sans-serif;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;min-height:100vh;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);background:#f2f2f7}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',sans-serif;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;min-height:100vh;background:#f2f2f7}
 #root{min-height:100vh;max-width:480px;margin:0 auto;position:relative}
 input,select,button,textarea{font-family:inherit;font-size:17px;line-height:1.4;-webkit-tap-highlight-color:transparent}
 button{touch-action:manipulation}
@@ -1029,17 +1029,17 @@ function App(){
       </button>
 
       {/* Bottom Tab Bar — 5 tabs */}
-      <div style={{background:T.card,flexShrink:0,paddingBottom:"env(safe-area-inset-bottom)",boxShadow:dark?"0 -.5px 0 rgba(255,255,255,.07)":"0 -.5px 0 rgba(0,0,0,.1)"}}>
-        <div style={{display:"flex",padding:"8px 0 10px"}}>
+      <div style={{background:T.card,flexShrink:0,padding:"12px 0 calc(env(safe-area-inset-bottom) + 14px)",boxShadow:dark?"0 -.5px 0 rgba(255,255,255,.07)":"0 -.5px 0 rgba(0,0,0,.1)"}}>
+        <div style={{display:"flex",padding:"0 0 10px"}}>
           {TABS.map(({id,lbl,ic})=>{
             const act=tab===id,col=act?T.acc:T.txt3;
             const hasBadge=(id==="splits"&&(pendingSplits.length>0||recurringDue.length>0));
             return(
               <button key={id} onClick={()=>setTab(id)}
-                style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:"none",border:"none",cursor:"pointer",padding:"10px 0 8px",color:col,position:"relative"}}>
+                style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:"none",border:"none",cursor:"pointer",padding:"12px 0 10px",minHeight:56,color:col,position:"relative"}}>
                 {ic(col)}
                 {hasBadge&&<div style={{position:"absolute",top:8,right:"calc(50% - 12px)",width:8,height:8,borderRadius:99,background:T.red,border:"2px solid "+T.card}}/>}
-                {act? <span style={{fontSize:11,fontWeight:700}}>{lbl}</span> : null}
+                {act? <span style={{fontSize:12,fontWeight:700}}>{lbl}</span> : null}
               </button>
             );
           })}
