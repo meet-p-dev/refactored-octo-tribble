@@ -398,8 +398,6 @@ function App(){
   const TABS=[
     {id:"home",lbl:"Home",ic:I.home},
     {id:"txs",lbl:"Activity",ic:I.list},
-    {id:"accs",lbl:"Accounts",ic:I.wallet},
-    {id:"categories",lbl:"Categories",ic:I.goal},
     {id:"splits",lbl:"Splits",ic:I.split},
     {id:"goals",lbl:"Goals",ic:I.goal},
     {id:"stats",lbl:"Analytics",ic:I.chart},
@@ -928,7 +926,7 @@ function App(){
                 style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2,background:"none",border:"none",cursor:"pointer",padding:"8px 0 6px",color:col,position:"relative"}}>
                 {ic(col)}
                 {hasBadge&&<div style={{position:"absolute",top:6,right:"calc(50% - 12px)",width:8,height:8,borderRadius:99,background:T.red,border:"2px solid "+T.card}}/>}
-                <span style={{fontSize:10,fontWeight:act?600:400}}>{lbl}</span>
+                {act? <span style={{fontSize:10,fontWeight:600}}>{lbl}</span> : null}
               </button>
             );
           })}
@@ -1192,6 +1190,24 @@ function App(){
             <div>
               <div style={{fontWeight:600,fontSize:15,color:T.txt}}>Restore backup</div>
               <div style={{fontSize:12,color:T.txt2,marginTop:1}}>Import a JSON backup file</div>
+            </div>
+          </button>
+        </div>
+        <div style={{display:"flex",gap:10,marginBottom:16}}>
+          <button onClick={()=>{setTab('accs');closeM();}}
+            style={{flex:1,display:"flex",alignItems:"center",gap:10,background:T.card,border:`1.5px solid ${T.border}`,borderRadius:12,padding:"12px 14px",cursor:"pointer",textAlign:"left"}}>
+            <div style={{width:36,height:36,borderRadius:10,background:T.acc+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{I.wallet(T.acc)}</div>
+            <div>
+              <div style={{fontWeight:600,fontSize:14,color:T.txt}}>Manage Accounts</div>
+              <div style={{fontSize:12,color:T.txt2,marginTop:2}}>Add, edit or remove bank accounts</div>
+            </div>
+          </button>
+          <button onClick={()=>{setTab('categories');closeM();}}
+            style={{flex:1,display:"flex",alignItems:"center",gap:10,background:T.card,border:`1.5px solid ${T.border}`,borderRadius:12,padding:"12px 14px",cursor:"pointer",textAlign:"left"}}>
+            <div style={{width:36,height:36,borderRadius:10,background:T.acc+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{I.goal(T.acc)}</div>
+            <div>
+              <div style={{fontWeight:600,fontSize:14,color:T.txt}}>Manage Categories</div>
+              <div style={{fontSize:12,color:T.txt2,marginTop:2}}>Create or remove expense categories</div>
             </div>
           </button>
         </div>
