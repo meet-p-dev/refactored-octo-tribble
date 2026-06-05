@@ -12,9 +12,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body,#root{height:100%;overflow:hidden}
-body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',sans-serif;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
-input,select,button,textarea{font-family:inherit;font-size:16px}
+html,body,#root{min-height:100%;height:100%;overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',sans-serif;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;min-height:100vh;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);background:#f2f2f7}
+#root{min-height:100vh;max-width:480px;margin:0 auto;position:relative}
+input,select,button,textarea{font-family:inherit;font-size:17px;line-height:1.4;-webkit-tap-highlight-color:transparent}
+button{touch-action:manipulation}
 input:focus,select:focus,textarea:focus{outline:none}
 ::-webkit-scrollbar{display:none}
 input[type=color]{-webkit-appearance:none;border:none;cursor:pointer}
@@ -167,6 +169,7 @@ function App(){
   const [drillCat,setDrillCat] = useState(null);
   const [ready,setReady]       = useState(false);
   const [toast,setToast]       = useState(null);
+  const [lastAction,setLastAction] = useState(null);
   const fileRef                = useRef();
 
   const T=dark?DK:LT;
@@ -182,9 +185,14 @@ function App(){
   const [goalForm,setGoalForm] = useState(iGoal);
   const [recForm,setRecForm]   = useState(iRec);
 
-  const showToast=(msg,ok=true)=>{
-    setToast({msg,ok});
-    setTimeout(()=>setToast(null),2400);
+  const showToast=(msg,ok=true,undo=null)=>{
+    setToast({msg,ok,undo});
+    if(undo){
+      // keep longer when undo available
+      setTimeout(()=>setToast(null),6000);
+    }else{
+      setTimeout(()=>setToast(null),2400);
+    }
   };
 
   useEffect(()=>{
@@ -288,48 +296,152 @@ function App(){
   const doAddTx=()=>{
     if(!txForm.amount||!txForm.accountId)return;
     const tx={...txForm,id:editId||uid(),amount:parseFloat(txForm.amount),splitPeople:txForm.isSplit?parseInt(txForm.splitPeople)||2:1};
-    st(editId?txs.map(t=>t.id===editId?tx:t):[tx,...txs]);
+    const newTxs=editId?txs.map(t=>t.id===editId?tx:t):[tx,...txs];
+    st(newTxs);
+    // remember last used
+    try{localStorage.setItem('mt-last-account',tx.accountId);localStorage.setItem('mt-last-category',tx.category);}catch{}
+    // store undo
+    setLastAction({type:'add-tx',payload:tx});
+    showToast(editId?"Transaction updated":"Transaction added",true,()=>{
+      // undo handler
+      st(prev=>prev.filter(t=>t.id!==tx.id));
+    });
     closeM();
   };
   const delTx=id=>st(txs.filter(t=>t.id!==id));
+  // improved delete with undo
+  const doDeleteTx=id=>{
+    const old=txs.find(t=>t.id===id);
+    if(!old)return;
+    st(txs.filter(t=>t.id!==id));
+    setLastAction({type:'del-tx',payload:old});
+    showToast('Transaction deleted',true,()=>{st(prev=>[old,...prev]);});
+  };
   const doEditTx=t=>{setTxForm({...iTx,...t});setEditId(t.id);setModal("tx");};
   const doAddAcc=()=>{
     if(!accForm.name)return;
     const a={id:editId||uid(),...accForm,ib:parseFloat(accForm.ib)||0};
-    sa(editId?accs.map(x=>x.id===editId?{...x,...a}:x):[...accs,a]);
+    const newAccs=editId?accs.map(x=>x.id===editId?{...x,...a}:x):[...accs,a];
+    sa(newAccs);
+    setLastAction({type:'add-acc',payload:a});
+    showToast(editId?"Account updated":"Account added",true,()=>{sa(prev=>prev.filter(x=>x.id!==a.id));});
     closeM();
   };
-  const delAcc=id=>sa(accs.filter(a=>a.id!==id));
+  const delAcc=id=>{
+    const a=accs.find(x=>x.id===id);
+    if(!a) return;
+    if(!confirm(`Delete account "${a.name}"? This will remove it from transactions.`))return;
+    sa(accs.filter(a=>a.id!==id));
+    setLastAction({type:'del-acc',payload:a});
+    showToast('Account deleted',true,()=>{sa(prev=>[a,...prev]);});
+  };
   const doEditAcc=a=>{setAccForm({name:a.name,color:a.color,ib:String(a.ib)});setEditId(a.id);setModal("acc");};
   const doAddCat=()=>{
     if(!catForm.label)return;
     const newId=editId||catForm.label.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"")||uid();
     const c={id:newId,...catForm};
-    sc(editId?cats.map(x=>x.id===editId?{...x,...c}:x):[...cats,c]);
+    const newCats=editId?cats.map(x=>x.id===editId?{...x,...c}:x):[...cats,c];
+    sc(newCats);
+    setLastAction({type:'add-cat',payload:c});
+    showToast(editId?"Category updated":"Category added",true,()=>{sc(prev=>prev.filter(x=>x.id!==c.id));});
     closeM();
   };
-  const delCat=id=>sc(cats.filter(c=>c.id!==id));
+  const delCat=id=>{
+    const c=cats.find(x=>x.id===id);
+    if(!c) return;
+    if(!confirm(`Delete category "${c.label}"? Transactions will keep the ID.`))return;
+    sc(cats.filter(c=>c.id!==id));
+    setLastAction({type:'del-cat',payload:c});
+    showToast('Category deleted',true,()=>{sc(prev=>[c,...prev]);});
+  };
   const doEditCat=c=>{setCatForm({label:c.label,icon:c.icon,color:c.color});setEditId(c.id);setModal("cat");};
   const openAdd=()=>{setTxForm({...iTx,accountId:accs[0]?.id||""});setEditId(null);setModal("tx");};
+
+  // prefill last used account/category when opening add
+  const openAddPrefill=()=>{
+    const lastAcc=localStorage.getItem('mt-last-account');
+    const lastCat=localStorage.getItem('mt-last-category');
+    setTxForm({...iTx,accountId:lastAcc||accs[0]?.id||"",category:lastCat||iTx.category});
+    setEditId(null);setModal("tx");
+  };
+
+  // export recent transactions as CSV
+  const exportRecentCSV=(n=100)=>{
+    const rows=txs.slice(0,n);
+    const hdr=['id','date','type','amount','merchant','category','accountId','notes'];
+    const csv=[hdr.join(',')];
+    rows.forEach(r=>{csv.push([r.id,r.date,r.type,('"'+String(r.amount).replace(/"/g,'""')+'"'),('"'+(r.merchant||'').replace(/"/g,'""')+'"'),r.category||'',r.accountId||'',('"'+(r.notes||'').replace(/"/g,'""')+'"')].join(','));});
+    const blob=new Blob([csv.join('\n')],{type:'text/csv;charset=utf-8;'});
+    const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='transactions_recent.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+  };
+
+  // Recurring automation: add due transactions for today if not yet triggered
+  useEffect(()=>{
+    if(!ready) return;
+    const triggerRecurringForToday=()=>{
+      const today=new Date();
+      const day=today.getDate();
+      const todayStr=today.toISOString().slice(0,10);
+      let changed=false;
+      recurring.forEach(r=>{
+        if(!r.active) return;
+        if(parseInt(r.dayOfMonth)||0 !== day) return;
+        if(r.lastTriggered===todayStr) return;
+        // create transaction
+        const tx={id:uid(),type:r.type||'expense',amount:parseFloat(r.amount)||0,merchant:r.merchant,category:r.category||'other',accountId:r.accountId||accs[0]?.id||'',notes:r.notes||'',date:todayStr,isSplit:false,splitPeople:1,splitSettled:false};
+        st(prev=>[tx,...prev]);
+        // mark recurring as triggered today
+        sr(prev=>prev.map(x=>x.id===r.id?{...x,lastTriggered:todayStr}:x));
+        changed=true;
+      });
+      if(changed) showToast('Added due recurring transactions',true);
+    };
+    // run on load
+    triggerRecurringForToday();
+    // run on focus
+    const onFocus=()=>triggerRecurringForToday();
+    window.addEventListener('focus',onFocus);
+    return ()=>window.removeEventListener('focus',onFocus);
+  },[ready,recurring,accs,txs]);
 
   // Goals
   const doAddGoal=()=>{
     if(!goalForm.name||!goalForm.targetAmount)return;
     const g={...goalForm,id:editId||uid(),targetAmount:parseFloat(goalForm.targetAmount)||0,savedAmount:parseFloat(goalForm.savedAmount)||0};
-    sg(editId?goals.map(x=>x.id===editId?g:x):[...goals,g]);
+    const newGoals=editId?goals.map(x=>x.id===editId?g:x):[...goals,g];
+    sg(newGoals);
+    setLastAction({type:'add-goal',payload:g});
+    showToast(editId?"Goal updated":"Goal added",true,()=>{sg(prev=>prev.filter(x=>x.id!==g.id));});
     closeM();
   };
-  const delGoal=id=>sg(goals.filter(g=>g.id!==id));
+  const delGoal=id=>{
+    const g=goals.find(x=>x.id===id);
+    if(!g) return;
+    if(!confirm(`Delete goal "${g.name}"? This cannot be undone.`))return;
+    sg(goals.filter(g=>g.id!==id));
+    setLastAction({type:'del-goal',payload:g});
+    showToast('Goal deleted',true,()=>{sg(prev=>[g,...prev]);});
+  };
   const doEditGoal=g=>{setGoalForm({name:g.name,targetAmount:String(g.targetAmount),savedAmount:String(g.savedAmount),icon:g.icon,color:g.color});setEditId(g.id);setModal("goal");};
 
   // Recurring
   const doAddRec=()=>{
     if(!recForm.merchant||!recForm.amount||!recForm.accountId)return;
-    const r={...recForm,id:editId||uid(),amount:parseFloat(recForm.amount)||0,dayOfMonth:parseInt(recForm.dayOfMonth)||1};
-    sr(editId?recurring.map(x=>x.id===editId?r:x):[...recurring,r]);
+    const r={...recForm,id:editId||uid(),amount:parseFloat(recForm.amount)||0,dayOfMonth:parseInt(recForm.dayOfMonth)||1,lastTriggered:recForm.lastTriggered||null};
+    const newR=editId?recurring.map(x=>x.id===editId?r:x):[...recurring,r];
+    sr(newR);
+    setLastAction({type:'add-rec',payload:r});
+    showToast(editId?"Recurring updated":"Recurring added",true,()=>{sr(prev=>prev.filter(x=>x.id!==r.id));});
     closeM();
   };
-  const delRec=id=>sr(recurring.filter(r=>r.id!==id));
+  const delRec=id=>{
+    const r=recurring.find(x=>x.id===id);
+    if(!r) return;
+    if(!confirm(`Delete recurring "${r.merchant}"?`))return;
+    sr(recurring.filter(r=>r.id!==id));
+    setLastAction({type:'del-rec',payload:r});
+    showToast('Recurring deleted',true,()=>{sr(prev=>[r,...prev]);});
+  };
   const addRecurringNow=r=>{
     const tx={id:uid(),type:r.type,amount:r.amount,merchant:r.merchant,category:r.category,accountId:r.accountId,notes:r.notes||"",date:tod(),isSplit:false,splitPeople:1,splitSettled:false};
     st([tx,...txs]);
@@ -410,6 +522,7 @@ function App(){
       {toast&&(
         <div style={{position:"fixed",top:"calc(env(safe-area-inset-top) + 12px)",left:"50%",transform:"translateX(-50%)",zIndex:999,background:toast.ok?"#1c1c1e":"#ff453a",color:"#fff",borderRadius:14,padding:"10px 18px",fontSize:14,fontWeight:600,display:"flex",alignItems:"center",gap:8,boxShadow:"0 4px 20px rgba(0,0,0,.3)",whiteSpace:"nowrap"}}>
           {toast.ok?I.check("#fff"):I.x("#fff")} {toast.msg}
+          {toast.undo&&<button onClick={()=>{try{toast.undo();}catch{};setToast(null);}} style={{marginLeft:12,background:"transparent",border:"1px solid rgba(255,255,255,.2)",color:"#fff",padding:"6px 10px",borderRadius:10,cursor:"pointer",fontWeight:700}}>Undo</button>}
         </div>
       )}
 
@@ -910,23 +1023,23 @@ function App(){
       </div>
 
       {/* FAB */}
-      <button onClick={openAdd}
-        style={{position:"fixed",right:20,bottom:"calc(env(safe-area-inset-bottom) + 74px)",width:58,height:58,borderRadius:29,background:T.acc,border:"none",boxShadow:"0 4px 20px rgba(0,122,255,.45)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
-        {I.plus("#fff",28)}
+      <button onClick={openAddPrefill}
+        style={{position:"fixed",right:20,bottom:"calc(env(safe-area-inset-bottom) + 86px)",width:64,height:64,borderRadius:32,background:T.acc,border:"none",boxShadow:"0 6px 30px rgba(0,122,255,.35)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
+        {I.plus("#fff",30)}
       </button>
 
       {/* Bottom Tab Bar — 5 tabs */}
       <div style={{background:T.card,flexShrink:0,paddingBottom:"env(safe-area-inset-bottom)",boxShadow:dark?"0 -.5px 0 rgba(255,255,255,.07)":"0 -.5px 0 rgba(0,0,0,.1)"}}>
-        <div style={{display:"flex",padding:"4px 0 2px"}}>
+        <div style={{display:"flex",padding:"8px 0 10px"}}>
           {TABS.map(({id,lbl,ic})=>{
             const act=tab===id,col=act?T.acc:T.txt3;
             const hasBadge=(id==="splits"&&(pendingSplits.length>0||recurringDue.length>0));
             return(
               <button key={id} onClick={()=>setTab(id)}
-                style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2,background:"none",border:"none",cursor:"pointer",padding:"8px 0 6px",color:col,position:"relative"}}>
+                style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:"none",border:"none",cursor:"pointer",padding:"10px 0 8px",color:col,position:"relative"}}>
                 {ic(col)}
-                {hasBadge&&<div style={{position:"absolute",top:6,right:"calc(50% - 12px)",width:8,height:8,borderRadius:99,background:T.red,border:"2px solid "+T.card}}/>}
-                {act? <span style={{fontSize:10,fontWeight:600}}>{lbl}</span> : null}
+                {hasBadge&&<div style={{position:"absolute",top:8,right:"calc(50% - 12px)",width:8,height:8,borderRadius:99,background:T.red,border:"2px solid "+T.card}}/>}
+                {act? <span style={{fontSize:11,fontWeight:700}}>{lbl}</span> : null}
               </button>
             );
           })}
@@ -1190,6 +1303,14 @@ function App(){
             <div>
               <div style={{fontWeight:600,fontSize:15,color:T.txt}}>Restore backup</div>
               <div style={{fontSize:12,color:T.txt2,marginTop:1}}>Import a JSON backup file</div>
+            </div>
+          </button>
+          <button onClick={()=>exportRecentCSV(200)}
+            style={{display:"flex",alignItems:"center",gap:12,background:T.bg,border:`1.5px solid ${T.border}`,borderRadius:14,padding:"15px 16px",cursor:"pointer",textAlign:"left"}}>
+            <div style={{width:40,height:40,borderRadius:12,background:T.card,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{I.download(T.txt)}</div>
+            <div>
+              <div style={{fontWeight:600,fontSize:15,color:T.txt}}>Export recent CSV</div>
+              <div style={{fontSize:12,color:T.txt2,marginTop:1}}>Download last 200 transactions as CSV</div>
             </div>
           </button>
         </div>
