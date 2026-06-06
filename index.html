@@ -22,6 +22,23 @@ input:focus,select:focus,textarea:focus{outline:none}
 input[type=color]{-webkit-appearance:none;border:none;cursor:pointer}
 input[type=date]{color-scheme:auto}
 select{-webkit-appearance:none}
+@keyframes mtFade{from{opacity:0}to{opacity:1}}
+@keyframes mtRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes mtPop{0%{transform:scale(.8);opacity:0}60%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
+@keyframes mtSheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes mtSpin{to{transform:rotate(360deg)}}
+@keyframes mtPulse{0%,100%{opacity:1}50%{opacity:.45}}
+@keyframes mtConfetti{0%{transform:translateY(-10vh) rotate(0);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:.9}}
+@keyframes mtShine{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes mtShake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-9px)}40%,80%{transform:translateX(9px)}}
+@keyframes mtRingFill{from{stroke-dashoffset:var(--c)}}
+.mt-rise{animation:mtRise .42s cubic-bezier(.22,1,.36,1) both}
+.mt-pop{animation:mtPop .34s cubic-bezier(.34,1.56,.64,1) both}
+.mt-press{transition:transform .12s ease}
+.mt-press:active{transform:scale(.94)}
+.mt-row:active{filter:brightness(.97)}
+.mt-hscroll{display:flex;gap:11px;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 0 2px;margin:0 -16px;padding-left:16px;padding-right:16px}
+.mt-hscroll>*{scroll-snap-align:start;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -92,6 +109,13 @@ const I={
   upload:c=><svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
   check:c=><svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2.5} strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>,
   bell:c=><svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>,
+  lock:(c,s=20)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2.5"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>,
+  budget:(c,s=24)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 11-9-9v9z"/><path d="M21 12a9 9 0 00-9-9"/></svg>,
+  spark:(c,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l1.8 4.7L18.5 9 14 11l-2 4.5L10 11 5.5 9l4.7-1.3z"/><circle cx="18.5" cy="17.5" r="1.5"/><circle cx="5" cy="16" r="1"/></svg>,
+  cal:(c,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>,
+  flame:(c,s=16)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d="M12 2s5 4 5 9a5 5 0 01-10 0c0-1.5.6-2.8 1.5-3.8C8.8 8 9 9.5 10 10c0-2 .5-5 2-8z"/></svg>,
+  trend:(c,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg>,
+  back2:(c,s=20)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="9 6 15 12 9 18" transform="rotate(180 12 12)"/></svg>,
 };
 
 function MiniChart({data,T}){
@@ -125,8 +149,8 @@ function Sheet({open,onClose,title,T,children}){
   if(!open)return null;
   return(
     <div style={{position:"fixed",inset:0,zIndex:300}}>
-      <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.5)",backdropFilter:"blur(2px)"}} onClick={onClose}/>
-      <div style={{position:"absolute",bottom:0,left:0,right:0,background:T.card,borderRadius:"22px 22px 0 0",paddingBottom:"calc(env(safe-area-inset-bottom) + 12px)",maxHeight:"92vh",display:"flex",flexDirection:"column",boxShadow:"0 -4px 30px rgba(0,0,0,.3)"}}>
+      <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.5)",backdropFilter:"blur(3px)",WebkitBackdropFilter:"blur(3px)",animation:"mtFade .25s ease"}} onClick={onClose}/>
+      <div style={{position:"absolute",bottom:0,left:0,right:0,background:T.card,borderRadius:"22px 22px 0 0",paddingBottom:"calc(env(safe-area-inset-bottom) + 12px)",maxHeight:"92vh",display:"flex",flexDirection:"column",boxShadow:"0 -4px 30px rgba(0,0,0,.3)",animation:"mtSheetUp .34s cubic-bezier(.22,1,.36,1)"}}>
         <div style={{width:36,height:4,background:T.border,borderRadius:99,margin:"12px auto 2px",flexShrink:0}}/>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 20px 10px",flexShrink:0,borderBottom:`1px solid ${T.border}`}}>
           <span style={{fontWeight:700,fontSize:18,color:T.txt}}>{title}</span>
@@ -146,8 +170,98 @@ function Label({text}){
 
 function Toggle({value,onChange,T}){
   return(
-    <div onClick={()=>onChange(!value)} style={{width:51,height:31,borderRadius:99,background:value?T.acc:T.border,cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}>
-      <div style={{position:"absolute",top:2,left:value?22:2,width:27,height:27,borderRadius:99,background:"#fff",boxShadow:"0 1px 4px rgba(0,0,0,.3)",transition:"left .2s"}}/>
+    <div onClick={()=>{haptic(10);onChange(!value);}} style={{width:51,height:31,borderRadius:99,background:value?T.acc:T.border,cursor:"pointer",position:"relative",transition:"background .25s",flexShrink:0}}>
+      <div style={{position:"absolute",top:2,left:value?22:2,width:27,height:27,borderRadius:99,background:"#fff",boxShadow:"0 1px 4px rgba(0,0,0,.3)",transition:"left .25s cubic-bezier(.34,1.56,.64,1)"}}/>
+    </div>
+  );
+}
+
+const haptic=(ms=10)=>{try{if(window.__mtHaptics!==false&&navigator.vibrate)navigator.vibrate(ms);}catch{}};
+
+function AnimatedNumber({value,format,style,dur=700}){
+  const [d,setD]=useState(value);
+  const ref=useRef(value);
+  useEffect(()=>{
+    const from=ref.current,to=value||0,start=performance.now();
+    if(from===to){setD(to);return;}
+    let raf;
+    const tick=now=>{
+      const t=Math.min((now-start)/dur,1),e=1-Math.pow(1-t,3);
+      setD(from+(to-from)*e);
+      if(t<1)raf=requestAnimationFrame(tick);else{ref.current=to;setD(to);}
+    };
+    raf=requestAnimationFrame(tick);
+    return()=>cancelAnimationFrame(raf);
+  },[value]);
+  return <span style={style}>{format?format(d):Math.round(d)}</span>;
+}
+
+function Ring({pct,size=66,stroke=7,color,track,children}){
+  const r=(size-stroke)/2,c=2*Math.PI*r;
+  const off=c*(1-Math.min(Math.max(pct||0,0),1));
+  return(
+    <div style={{position:"relative",width:size,height:size,flexShrink:0}}>
+      <svg width={size} height={size} style={{transform:"rotate(-90deg)"}}>
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={track} strokeWidth={stroke}/>
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeDasharray={c} strokeDashoffset={off} style={{transition:"stroke-dashoffset .7s cubic-bezier(.22,1,.36,1)"}}/>
+      </svg>
+      {children!=null&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>{children}</div>}
+    </div>
+  );
+}
+
+function Confetti({show}){
+  const pieces=useMemo(()=>Array.from({length:64},(_,i)=>({
+    id:i,left:Math.random()*100,delay:Math.random()*.45,dur:1.7+Math.random()*1.5,
+    color:["#ff453a","#30d158","#0a84ff","#ffd60a","#bf5af2","#ff9f0a","#64d2ff"][i%7],
+    w:6+Math.random()*7,rot:Math.random()*360
+  })),[show]);
+  if(!show)return null;
+  return(
+    <div style={{position:"fixed",inset:0,zIndex:998,pointerEvents:"none",overflow:"hidden"}}>
+      {pieces.map(p=>(
+        <div key={p.id} style={{position:"absolute",top:0,left:p.left+"%",width:p.w,height:p.w*.62,background:p.color,borderRadius:2,transform:`rotate(${p.rot}deg)`,animation:`mtConfetti ${p.dur}s ${p.delay}s cubic-bezier(.4,0,.7,1) forwards`}}/>
+      ))}
+    </div>
+  );
+}
+
+function PinLock({T,mode,storedPin,onDone,onCancel}){
+  const [stage,setStage]=useState(mode==="set"?"new":"enter");
+  const [first,setFirst]=useState("");
+  const [entry,setEntry]=useState("");
+  const [shake,setShake]=useState(false);
+  const [err,setErr]=useState("");
+  const titles={enter:"Enter Passcode",new:"Create Passcode",confirm:"Confirm Passcode"};
+  const subs={enter:"Unlock MoneyTrack",new:"Choose a 4-digit code",confirm:"Re-enter your code"};
+  const fail=msg=>{setShake(true);setErr(msg||"");haptic([30,40,30]);setTimeout(()=>{setShake(false);setEntry("");setErr("");},520);};
+  const commit=code=>{
+    if(stage==="enter"){ if(code===storedPin){haptic(14);onDone(code);} else fail("Wrong passcode"); }
+    else if(stage==="new"){ setFirst(code);setEntry("");setStage("confirm"); }
+    else { if(code===first){haptic(14);onDone(code);} else {setStage("new");setFirst("");fail("Codes didn't match");} }
+  };
+  const press=n=>{ if(entry.length>=4)return; haptic(8); const next=entry+n; setEntry(next); if(next.length===4)setTimeout(()=>commit(next),150); };
+  const del=()=>{haptic(8);setEntry(e=>e.slice(0,-1));};
+  const keys=["1","2","3","4","5","6","7","8","9","","0","del"];
+  return(
+    <div style={{position:"fixed",inset:0,zIndex:1000,background:T.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",paddingTop:"env(safe-area-inset-top)",paddingBottom:"calc(env(safe-area-inset-bottom) + 24px)",animation:"mtFade .25s ease"}}>
+      <div style={{position:"absolute",top:"14vh",width:120,height:120,borderRadius:99,background:`radial-gradient(circle,${T.acc}33,transparent 70%)`,filter:"blur(8px)"}}/>
+      <div style={{width:66,height:66,borderRadius:20,background:T.acc,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:18,boxShadow:`0 10px 34px ${T.acc}66`}} className="mt-pop">{I.lock("#fff",30)}</div>
+      <div style={{fontWeight:700,fontSize:22,color:T.txt,letterSpacing:-.3}}>{titles[stage]}</div>
+      <div style={{fontSize:14,color:err?T.red:T.txt2,marginTop:5,height:18,fontWeight:err?600:400}}>{err||subs[stage]}</div>
+      <div style={{display:"flex",gap:18,margin:"26px 0 34px",animation:shake?"mtShake .5s":"none"}}>
+        {[0,1,2,3].map(i=>(
+          <div key={i} style={{width:15,height:15,borderRadius:99,background:i<entry.length?(err?T.red:T.acc):"transparent",border:`2px solid ${i<entry.length?(err?T.red:T.acc):T.inpB}`,transition:"all .15s"}}/>
+        ))}
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,76px)",gap:16}}>
+        {keys.map((k,i)=>k===""?<div key={i}/>:k==="del"?(
+          <button key={i} onClick={del} className="mt-press" style={{height:76,borderRadius:99,background:"transparent",border:"none",color:T.txt,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>{I.x(T.txt2)}</button>
+        ):(
+          <button key={i} onClick={()=>press(k)} className="mt-press" style={{height:76,borderRadius:99,background:T.card,border:`1px solid ${T.border}`,color:T.txt,fontSize:30,fontWeight:500,cursor:"pointer",boxShadow:"0 1px 3px rgba(0,0,0,.05)"}}>{k}</button>
+        ))}
+      </div>
+      {onCancel&&<button onClick={onCancel} style={{marginTop:26,background:"none",border:"none",color:T.acc,fontSize:16,fontWeight:600,cursor:"pointer"}}>Cancel</button>}
     </div>
   );
 }
@@ -170,9 +284,19 @@ function App(){
   const [ready,setReady]       = useState(false);
   const [toast,setToast]       = useState(null);
   const [lastAction,setLastAction] = useState(null);
+  const [budgets,setBudgets]   = useState({});
+  const [pin,setPin]           = useState(null);
+  const [locked,setLocked]     = useState(false);
+  const [pinFlow,setPinFlow]   = useState(null); // 'set' | 'disable'
+  const [hapticsOn,setHapticsOn]= useState(true);
+  const [anaView,setAnaView]   = useState("spend"); // spend | budget | cal
+  const [confetti,setConfetti] = useState(false);
+  const [calMonth,setCalMonth] = useState(()=>new Date().toISOString().slice(0,7));
   const fileRef                = useRef();
 
   const T=dark?DK:LT;
+  useEffect(()=>{window.__mtHaptics=hapticsOn;},[hapticsOn]);
+  const fireConfetti=()=>{setConfetti(true);haptic([12,40,12,40,18]);setTimeout(()=>setConfetti(false),2600);};
 
   const iTx={date:tod(),type:"expense",amount:"",merchant:"",category:"other",accountId:"",toAccountId:"",notes:"",isSplit:false,splitPeople:2,splitSettled:false};
   const iAcc={name:"",color:"#3b82f6",ib:""};
@@ -186,6 +310,7 @@ function App(){
   const [recForm,setRecForm]   = useState(iRec);
 
   const showToast=(msg,ok=true,undo=null)=>{
+    haptic(ok?12:[20,30,20]);
     setToast({msg,ok,undo});
     if(undo){
       // keep longer when undo available
@@ -202,16 +327,25 @@ function App(){
     const g=LS.g("mt-goals")||[];
     const r=LS.g("mt-recurring")||[];
     setAccs(a);setCats(c);setTxs(t);setGoals(g);setRecurring(r);
+    setBudgets(LS.g("mt-budgets")||{});
+    const savedPin=LS.g("mt-pin");
+    if(savedPin){setPin(savedPin);setLocked(true);}
+    const hp=LS.g("mt-haptics");setHapticsOn(hp===null?true:hp);
     if(!LS.g("mt-accs"))LS.s("mt-accs",DEFACCS);
     if(!LS.g("mt-cats"))LS.s("mt-cats",CATS);
     setReady(true);
   },[]);
 
-  const sa=a=>{setAccs(a);LS.s("mt-accs",a);};
-  const sc=c=>{setCats(c);LS.s("mt-cats",c);};
-  const st=t=>{setTxs(t);LS.s("mt-txs",t);};
-  const sg=g=>{setGoals(g);LS.s("mt-goals",g);};
-  const sr=r=>{setRecurring(r);LS.s("mt-recurring",r);};
+  // Setters accept a value OR a functional updater; persist the resolved next value
+  // (LS.s JSON.stringifies, so passing a raw function would store "undefined").
+  const mkSet=(setState,key)=>v=>setState(prev=>{const next=typeof v==='function'?v(prev):v;LS.s(key,next);return next;});
+  const sa=mkSet(setAccs,"mt-accs");
+  const sc=mkSet(setCats,"mt-cats");
+  const st=mkSet(setTxs,"mt-txs");
+  const sg=mkSet(setGoals,"mt-goals");
+  const sr=mkSet(setRecurring,"mt-recurring");
+  const sb=mkSet(setBudgets,"mt-budgets");
+  const setHap=v=>{setHapticsOn(v);LS.s("mt-haptics",v);};
   const tgDk=()=>{const nd=!dark;setDark(nd);LS.s("mt-dark",nd);};
 
   const getCat=id=>cats.find(c=>c.id===id)||CATS.find(c=>c.id===id)||{icon:"📦",color:"#9ca3af",label:id||"Other"};
@@ -290,6 +424,75 @@ function App(){
     const dom=today.getDate();
     return recurring.filter(r=>r.active&&r.dayOfMonth>=dom&&r.dayOfMonth<=dom+3);
   },[recurring]);
+
+  // ── Budgets, Safe-to-spend & Insights ──
+  const monthKey=new Date().toISOString().slice(0,7);
+  const now0=new Date();
+  const daysInMonth=new Date(now0.getFullYear(),now0.getMonth()+1,0).getDate();
+  const dayOfMonth=now0.getDate();
+  const daysLeft=Math.max(daysInMonth-dayOfMonth+1,1);
+
+  const monthCatSpent=useMemo(()=>{
+    const m={};
+    txs.filter(t=>t.type==="expense"&&t.date.startsWith(monthKey)).forEach(t=>{
+      const amt=t.isSplit?parseFloat(t.amount)/t.splitPeople:parseFloat(t.amount);
+      m[t.category||"other"]=(m[t.category||"other"]||0)+amt;
+    });
+    return m;
+  },[txs]);
+
+  const budgetData=useMemo(()=>cats
+    .map(c=>({...c,limit:parseFloat(budgets[c.id])||0,spent:monthCatSpent[c.id]||0}))
+    .filter(b=>b.limit>0)
+    .map(b=>({...b,pct:b.spent/b.limit,left:b.limit-b.spent}))
+    .sort((a,b)=>b.pct-a.pct)
+  ,[cats,budgets,monthCatSpent]);
+  const totalBudget=useMemo(()=>budgetData.reduce((s,b)=>s+b.limit,0),[budgetData]);
+  const totalBudgetSpent=useMemo(()=>budgetData.reduce((s,b)=>s+b.spent,0),[budgetData]);
+  const overBudget=useMemo(()=>budgetData.filter(b=>b.pct>1),[budgetData]);
+
+  const safeToday=useMemo(()=>{
+    if(totalBudget>0)return Math.max((totalBudget-totalBudgetSpent)/daysLeft,0);
+    if(mSt.inc>0)return Math.max((mSt.inc-mSt.spt)/daysLeft,0);
+    return 0;
+  },[totalBudget,totalBudgetSpent,mSt,daysLeft]);
+
+  const insights=useMemo(()=>{
+    const list=[];
+    const dailyAvg=mSt.spt/Math.max(dayOfMonth,1);
+    const projected=dailyAvg*daysInMonth;
+    const lm=new Date(now0.getFullYear(),now0.getMonth()-1,1);
+    const lmKey=`${lm.getFullYear()}-${String(lm.getMonth()+1).padStart(2,"0")}`;
+    const lmSpent=txs.filter(t=>t.type==="expense"&&t.date.startsWith(lmKey)).reduce((s,t)=>s+(t.isSplit?parseFloat(t.amount)/t.splitPeople:parseFloat(t.amount)),0);
+    const expTx=txs.filter(t=>t.type==="expense"&&t.date.startsWith(monthKey));
+    if(mSt.inc>0){
+      const rate=Math.round((mSt.inc-mSt.spt)/mSt.inc*100);
+      list.push({icon:"💎",label:"Savings rate",value:rate+"%",sub:rate>=20?"Great this month":"Aim for 20%+",tone:rate>=20?"green":rate>=0?"blue":"red"});
+    }
+    if(mSt.spt>0)list.push({icon:"📈",label:"Projected spend",value:fmt(projected),sub:"at this pace by month-end",tone:"blue"});
+    if(lmSpent>0){
+      const diff=Math.round((mSt.spt-lmSpent)/lmSpent*100);
+      list.push({icon:diff<=0?"🎉":"⚠️",label:"vs last month",value:(diff>0?"+":"")+diff+"%",sub:diff<=0?"spending less":"spending more",tone:diff<=0?"green":"red"});
+    }
+    list.push({icon:"📅",label:"Daily average",value:fmt(dailyAvg),sub:`over ${dayOfMonth} day${dayOfMonth>1?"s":""}`,tone:"blue"});
+    if(expTx.length){
+      const big=expTx.reduce((a,b)=>parseFloat(b.amount)>parseFloat(a.amount)?b:a);
+      list.push({icon:"🔥",label:"Biggest expense",value:fmt(parseFloat(big.amount)),sub:big.merchant||"—",tone:"red"});
+      const mm={};expTx.forEach(t=>{const k=t.merchant||"Unknown";mm[k]=(mm[k]||0)+(t.isSplit?parseFloat(t.amount)/t.splitPeople:parseFloat(t.amount));});
+      const top=Object.entries(mm).sort((a,b)=>b[1]-a[1])[0];
+      if(top)list.push({icon:"🏪",label:"Top merchant",value:top[0],sub:fmt(top[1])+" this month",tone:"blue"});
+    }
+    return list;
+  },[txs,mSt,dayOfMonth,daysInMonth]);
+
+  const calData=useMemo(()=>{
+    const m={};
+    txs.filter(t=>t.type==="expense"&&t.date.startsWith(calMonth)).forEach(t=>{
+      const amt=t.isSplit?parseFloat(t.amount)/t.splitPeople:parseFloat(t.amount);
+      m[t.date]=(m[t.date]||0)+amt;
+    });
+    return m;
+  },[txs,calMonth]);
 
   const closeM=()=>{setModal(null);setEditId(null);setTxForm(iTx);setAccForm(iAcc);setGoalForm(iGoal);setRecForm(iRec);};
 
@@ -382,19 +585,25 @@ function App(){
       const today=new Date();
       const day=today.getDate();
       const todayStr=today.toISOString().slice(0,10);
-      let changed=false;
+      const newTxs=[];
+      const triggeredIds=new Set();
       recurring.forEach(r=>{
         if(!r.active) return;
-        if(parseInt(r.dayOfMonth)||0 !== day) return;
+        if((parseInt(r.dayOfMonth)||0) !== day) return;
         if(r.lastTriggered===todayStr) return;
         // create transaction
         const tx={id:uid(),type:r.type||'expense',amount:parseFloat(r.amount)||0,merchant:r.merchant,category:r.category||'other',accountId:r.accountId||accs[0]?.id||'',notes:r.notes||'',date:todayStr,isSplit:false,splitPeople:1,splitSettled:false};
-        st(prev=>[tx,...prev]);
-        // mark recurring as triggered today
-        sr(prev=>prev.map(x=>x.id===r.id?{...x,lastTriggered:todayStr}:x));
-        changed=true;
+        newTxs.push(tx);
+        triggeredIds.add(r.id);
       });
-      if(changed) showToast('Added due recurring transactions',true);
+      // Persist with concrete arrays: st/sr JSON.stringify their arg, so a functional
+      // updater would serialize to "undefined" and corrupt localStorage. One call each
+      // also avoids stale-closure clobbering when multiple items are due the same day.
+      if(newTxs.length){
+        st([...newTxs,...txs]);
+        sr(recurring.map(x=>triggeredIds.has(x.id)?{...x,lastTriggered:todayStr}:x));
+        showToast('Added due recurring transactions',true);
+      }
     };
     // run on load
     triggerRecurringForToday();
@@ -411,7 +620,9 @@ function App(){
     const newGoals=editId?goals.map(x=>x.id===editId?g:x):[...goals,g];
     sg(newGoals);
     setLastAction({type:'add-goal',payload:g});
-    showToast(editId?"Goal updated":"Goal added",true,()=>{sg(prev=>prev.filter(x=>x.id!==g.id));});
+    const reached=g.targetAmount>0&&g.savedAmount>=g.targetAmount;
+    showToast(reached?"Goal reached! 🎉":editId?"Goal updated":"Goal added",true,()=>{sg(prev=>prev.filter(x=>x.id!==g.id));});
+    if(reached)fireConfetti();
     closeM();
   };
   const delGoal=id=>{
@@ -494,6 +705,17 @@ function App(){
     e.target.value="";
   };
 
+  // Budgets
+  const setBudget=(catId,val)=>{
+    const next={...budgets},n=parseFloat(val);
+    if(!val||isNaN(n)||n<=0)delete next[catId];else next[catId]=n;
+    sb(next);
+  };
+  // App Lock
+  const enableLock=()=>setPinFlow("set");
+  const disableLock=()=>setPinFlow("disable");
+  const lockNow=()=>{if(pin){haptic(12);setLocked(true);}};
+
   const net=mSt.inc-mSt.spt,netPos=net>=0;
   const mxCat=catD[0]?.total||1;
   const inp={display:"block",width:"100%",background:T.inp,color:T.txt,border:`1.5px solid ${T.inpB}`,borderRadius:12,padding:"13px 14px",fontSize:16,outline:"none",WebkitAppearance:"none",appearance:"none"};
@@ -518,6 +740,20 @@ function App(){
   return(
     <div style={{display:"flex",flexDirection:"column",height:"100dvh",background:T.bg,color:T.txt}}>
 
+      {/* Confetti celebration */}
+      <Confetti show={confetti}/>
+
+      {/* App Lock / PIN setup overlay */}
+      {(locked||pinFlow)&&(
+        <PinLock T={T} mode={pinFlow==="set"?"set":"enter"} storedPin={pin}
+          onDone={code=>{
+            if(pinFlow==="set"){LS.s("mt-pin",code);setPin(code);setPinFlow(null);showToast("App Lock enabled");}
+            else if(pinFlow==="disable"){LS.s("mt-pin",null);setPin(null);setPinFlow(null);showToast("App Lock disabled");}
+            else{haptic(14);setLocked(false);}
+          }}
+          onCancel={pinFlow?()=>setPinFlow(null):null}/>
+      )}
+
       {/* Toast */}
       {toast&&(
         <div style={{position:"fixed",top:"calc(env(safe-area-inset-top) + 12px)",left:"50%",transform:"translateX(-50%)",zIndex:999,background:toast.ok?"#1c1c1e":"#ff453a",color:"#fff",borderRadius:14,padding:"10px 18px",fontSize:14,fontWeight:600,display:"flex",alignItems:"center",gap:8,boxShadow:"0 4px 20px rgba(0,0,0,.3)",whiteSpace:"nowrap"}}>
@@ -534,10 +770,13 @@ function App(){
             <span style={{fontWeight:700,fontSize:19,letterSpacing:-.4}}>MoneyTrack</span>
           </div>
           <div style={{display:"flex",gap:8}}>
-            <button onClick={()=>setModal("settings")} style={{background:T.bg,border:`1px solid ${T.border}`,borderRadius:10,padding:"7px 10px",cursor:"pointer",display:"flex",alignItems:"center",color:T.acc}}>
+            {pin&&<button onClick={lockNow} className="mt-press" style={{background:T.bg,border:`1px solid ${T.border}`,borderRadius:10,padding:"7px 10px",cursor:"pointer",display:"flex",alignItems:"center",color:T.acc}}>
+              {I.lock(T.acc,18)}
+            </button>}
+            <button onClick={()=>setModal("settings")} className="mt-press" style={{background:T.bg,border:`1px solid ${T.border}`,borderRadius:10,padding:"7px 10px",cursor:"pointer",display:"flex",alignItems:"center",color:T.acc}}>
               {I.settings(T.txt2)}
             </button>
-            <button onClick={tgDk} style={{background:T.bg,border:`1px solid ${T.border}`,borderRadius:10,padding:"7px 10px",cursor:"pointer",display:"flex",alignItems:"center",color:T.acc}}>
+            <button onClick={tgDk} className="mt-press" style={{background:T.bg,border:`1px solid ${T.border}`,borderRadius:10,padding:"7px 10px",cursor:"pointer",display:"flex",alignItems:"center",color:T.acc}}>
               {dark?I.sun(T.acc):I.moon(T.acc)}
             </button>
           </div>
@@ -550,16 +789,23 @@ function App(){
 
           {/* ══ HOME ══ */}
           {tab==="home"&&<>
-            <div style={{background:`linear-gradient(135deg,${T.acc},${dark?"#0050cc":"#0051d5"})`,borderRadius:22,padding:"22px 20px 18px",marginBottom:14,color:"#fff",boxShadow:"0 6px 24px rgba(0,122,255,.35)"}}>
-              <div style={{fontSize:13,opacity:.8,fontWeight:500,marginBottom:2}}>Total Balance</div>
-              <div style={{fontSize:38,fontWeight:700,letterSpacing:-.8,marginBottom:18}}>{fmt(totBal)}</div>
-              <div style={{display:"flex",gap:0,background:"rgba(255,255,255,.15)",borderRadius:14,overflow:"hidden"}}>
-                {[["+"+fmt(mSt.inc),"Income"],["-"+fmt(mSt.spt),"My Spend"],[(netPos?"+":"")+fmt(net),"Net"]].map(([val,lbl],i)=>(
-                  <div key={lbl} style={{flex:1,padding:"10px 0",textAlign:"center",borderLeft:i>0?"1px solid rgba(255,255,255,.2)":"none"}}>
-                    <div style={{fontSize:14,fontWeight:600}}>{val}</div>
-                    <div style={{fontSize:11,opacity:.75,marginTop:1}}>{lbl} · {mLbl.slice(0,3)}</div>
-                  </div>
-                ))}
+            <div className="mt-rise" style={{position:"relative",background:`linear-gradient(135deg,${T.acc} 0%,${dark?"#0a3a9c":"#0051d5"} 100%)`,borderRadius:24,padding:"22px 20px 18px",marginBottom:14,color:"#fff",boxShadow:`0 10px 30px ${T.acc}55`,overflow:"hidden"}}>
+              <div style={{position:"absolute",top:-44,right:-26,width:160,height:160,borderRadius:99,background:"rgba(255,255,255,.13)"}}/>
+              <div style={{position:"absolute",bottom:-66,left:-24,width:150,height:150,borderRadius:99,background:"rgba(255,255,255,.07)"}}/>
+              <div style={{position:"relative"}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:3}}>
+                  <div style={{fontSize:13,opacity:.85,fontWeight:500}}>Total Balance</div>
+                  <div style={{fontSize:11,opacity:.85,fontWeight:600,background:"rgba(255,255,255,.18)",padding:"3px 9px",borderRadius:99}}>{accs.length} account{accs.length!==1?"s":""}</div>
+                </div>
+                <AnimatedNumber value={totBal} format={fmt} style={{fontSize:40,fontWeight:700,letterSpacing:-.8,marginBottom:18,display:"block"}}/>
+                <div style={{display:"flex",gap:0,background:"rgba(255,255,255,.15)",borderRadius:14,overflow:"hidden"}}>
+                  {[["+"+fmt(mSt.inc),"Income"],["-"+fmt(mSt.spt),"My Spend"],[(netPos?"+":"")+fmt(net),"Net"]].map(([val,lbl],i)=>(
+                    <div key={lbl} style={{flex:1,padding:"10px 0",textAlign:"center",borderLeft:i>0?"1px solid rgba(255,255,255,.2)":"none"}}>
+                      <div style={{fontSize:14,fontWeight:600}}>{val}</div>
+                      <div style={{fontSize:11,opacity:.75,marginTop:1}}>{lbl} · {mLbl.slice(0,3)}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -584,6 +830,58 @@ function App(){
                   <div style={{fontSize:12,color:dark?"#4ade80":"#16a34a",marginTop:1}}>{pendingSplits.length} unsettled split{pendingSplits.length>1?"s":""}</div>
                 </div>
                 <button onClick={()=>setTab("splits")} style={{background:"none",border:"none",color:dark?"#30d158":"#16a34a",fontSize:12,fontWeight:600,cursor:"pointer",padding:0}}>View</button>
+              </div>
+            )}
+
+            {/* Safe-to-spend + budget snapshot */}
+            <div style={{display:"flex",gap:11,marginBottom:14}}>
+              <div className="mt-rise" style={{flex:1,background:T.card,borderRadius:18,padding:"15px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:7}}>{I.flame(T.acc)}<span style={{fontSize:12,fontWeight:600,color:T.txt2}}>Safe / day</span></div>
+                <AnimatedNumber value={safeToday} format={fmt} style={{fontSize:23,fontWeight:700,letterSpacing:-.5,color:safeToday>0?T.txt:T.txt3}}/>
+                <div style={{fontSize:11,color:T.txt3,marginTop:4}}>{daysLeft} day{daysLeft>1?"s":""} left · {totalBudget>0?"on budget":"on income"}</div>
+              </div>
+              <div onClick={()=>{setTab("stats");setAnaView("budget");}} className="mt-rise mt-press" style={{flex:1,background:T.card,borderRadius:18,padding:"15px",cursor:"pointer"}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:7}}>{I.budget(T.acc,16)}<span style={{fontSize:12,fontWeight:600,color:T.txt2}}>Budget left</span></div>
+                {totalBudget>0?<>
+                  <AnimatedNumber value={Math.max(totalBudget-totalBudgetSpent,0)} format={fmt} style={{fontSize:23,fontWeight:700,letterSpacing:-.5,color:totalBudgetSpent>totalBudget?T.red:T.txt}}/>
+                  <div style={{height:5,background:T.border,borderRadius:99,marginTop:9,overflow:"hidden"}}><div style={{height:"100%",borderRadius:99,width:Math.min(totalBudgetSpent/totalBudget*100,100)+"%",background:totalBudgetSpent>totalBudget?T.red:T.green,transition:"width .6s cubic-bezier(.22,1,.36,1)"}}/></div>
+                </>:<>
+                  <div style={{fontSize:16,fontWeight:700,color:T.acc,marginTop:1}}>Set up →</div>
+                  <div style={{fontSize:11,color:T.txt3,marginTop:5}}>Track monthly limits</div>
+                </>}
+              </div>
+            </div>
+
+            {/* Over-budget alert */}
+            {overBudget.length>0&&(
+              <div onClick={()=>{setTab("stats");setAnaView("budget");}} className="mt-press" style={{background:dark?"#2d0000":"#ffe5e3",border:`1px solid ${dark?"#5c1a1a":"#fca5a5"}`,borderRadius:16,padding:"12px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
+                <span style={{fontSize:18}}>⚠️</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:600,fontSize:14,color:dark?"#ff6b6b":"#b91c1c"}}>{overBudget.length} budget{overBudget.length>1?"s":""} over limit</div>
+                  <div style={{fontSize:12,color:dark?"#ff8888":"#dc2626",marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{overBudget.map(b=>b.label).join(", ")}</div>
+                </div>
+                <span style={{color:dark?"#ff6b6b":"#b91c1c",fontSize:12,fontWeight:600,flexShrink:0}}>View</span>
+              </div>
+            )}
+
+            {/* Smart Insights */}
+            {insights.length>0&&(
+              <div style={{marginBottom:14}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}>{I.spark(T.acc)}<span style={{fontWeight:700,fontSize:16}}>Smart Insights</span></div>
+                <div className="mt-hscroll">
+                  {insights.map((ins,i)=>{
+                    const tones={green:[T.green,dark?"#0c2a16":"#e7f9ee"],red:[T.red,dark?"#2d0000":"#ffe5e3"],blue:[T.acc,dark?"#001533":"#e7f0ff"]};
+                    const [cc,bg]=tones[ins.tone]||tones.blue;
+                    return(
+                      <div key={i} className="mt-rise" style={{width:152,background:T.card,borderRadius:18,padding:"14px",animationDelay:(i*45)+"ms"}}>
+                        <div style={{width:34,height:34,borderRadius:11,background:bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,marginBottom:9}}>{ins.icon}</div>
+                        <div style={{fontSize:12,color:T.txt2,fontWeight:500}}>{ins.label}</div>
+                        <div style={{fontSize:19,fontWeight:700,color:cc,letterSpacing:-.3,margin:"2px 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ins.value}</div>
+                        <div style={{fontSize:11,color:T.txt3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ins.sub}</div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
@@ -962,7 +1260,13 @@ function App(){
           {/* ══ ANALYTICS ══ */}
           {tab==="stats"&&<>
             <div style={{fontWeight:700,fontSize:20,marginBottom:14}}>Analytics</div>
-            {drillCat?(()=>{
+            <div style={{display:"flex",background:T.card,borderRadius:13,padding:4,marginBottom:14,gap:4}}>
+              {[["spend","Spending"],["budget","Budgets"],["cal","Calendar"]].map(([v,l])=>(
+                <button key={v} onClick={()=>{haptic(8);setAnaView(v);setDrillCat(null);}}
+                  style={{flex:1,padding:"9px 0",borderRadius:10,border:"none",background:anaView===v?T.acc:"transparent",color:anaView===v?"#fff":T.txt2,fontWeight:600,fontSize:14,cursor:"pointer",transition:"all .2s"}}>{l}</button>
+              ))}
+            </div>
+            {anaView==="spend"&&(drillCat?(()=>{
               const c=catD.find(x=>x.id===drillCat);if(!c)return null;
               return(<>
                 <button onClick={()=>setDrillCat(null)} style={{display:"flex",alignItems:"center",gap:4,background:"none",border:"none",color:T.acc,fontSize:15,cursor:"pointer",marginBottom:12,fontWeight:500,padding:0}}>
@@ -1016,33 +1320,143 @@ function App(){
                     </div>
                   ))}
                 </div>
-            )}
+            ))}
+
+            {/* ── Budgets view ── */}
+            {anaView==="budget"&&<>
+              <div style={{background:T.card,borderRadius:18,padding:"16px",marginBottom:14,display:"flex",alignItems:"center",gap:16}}>
+                <Ring pct={totalBudget>0?totalBudgetSpent/totalBudget:0} size={78} stroke={8} color={totalBudgetSpent>totalBudget?T.red:T.acc} track={T.border}>
+                  <span style={{fontSize:15,fontWeight:700,color:T.txt}}>{totalBudget>0?Math.round(totalBudgetSpent/totalBudget*100)+"%":"—"}</span>
+                </Ring>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:13,color:T.txt2,fontWeight:500}}>Spent this month</div>
+                  <div style={{fontSize:22,fontWeight:700,letterSpacing:-.4}}>{fmt(totalBudgetSpent)}</div>
+                  <div style={{fontSize:13,color:T.txt3,marginTop:2}}>{totalBudget>0?`of ${fmt(totalBudget)} · ${fmt(Math.max(totalBudget-totalBudgetSpent,0))} left`:"No budgets set yet"}</div>
+                </div>
+              </div>
+              <div style={{fontSize:12,fontWeight:600,color:T.txt2,textTransform:"uppercase",letterSpacing:.5,marginBottom:8,paddingLeft:2}}>Monthly limit per category</div>
+              <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:90}}>
+                {cats.map(c=>{
+                  const limit=parseFloat(budgets[c.id])||0,spent=monthCatSpent[c.id]||0;
+                  const pct=limit>0?spent/limit:0,over=limit>0&&spent>limit;
+                  return(
+                    <div key={c.id} style={{background:T.card,borderRadius:16,padding:"13px 14px"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:12}}>
+                        <div style={{width:40,height:40,borderRadius:12,background:c.color+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{c.icon}</div>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontWeight:600,fontSize:15}}>{c.label}</div>
+                          <div style={{fontSize:12,color:over?T.red:T.txt2,marginTop:1}}>{limit>0?`${fmt(spent)} of ${fmt(limit)}${over?" · over!":""}`:`${fmt(spent)} spent`}</div>
+                        </div>
+                        <div style={{position:"relative",width:98,flexShrink:0}}>
+                          <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:T.txt3,fontSize:14,pointerEvents:"none"}}>€</span>
+                          <input type="number" inputMode="decimal" min="0" placeholder="—" defaultValue={limit||""}
+                            onChange={e=>setBudget(c.id,e.target.value)}
+                            style={{width:"100%",background:T.bg,color:T.txt,border:`1.5px solid ${T.inpB}`,borderRadius:11,padding:"9px 10px 9px 22px",fontSize:15,textAlign:"right"}}/>
+                        </div>
+                      </div>
+                      {limit>0&&(
+                        <div style={{height:6,background:T.border,borderRadius:99,marginTop:10,overflow:"hidden"}}>
+                          <div style={{height:"100%",borderRadius:99,width:Math.min(pct*100,100)+"%",background:over?T.red:pct>.85?"#ff9f0a":c.color,transition:"width .5s cubic-bezier(.22,1,.36,1)"}}/>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>}
+
+            {/* ── Calendar heatmap view ── */}
+            {anaView==="cal"&&(()=>{
+              const [yy,mm]=calMonth.split("-").map(Number);
+              const first=new Date(yy,mm-1,1);
+              const startDow=(first.getDay()+6)%7;
+              const dim=new Date(yy,mm,0).getDate();
+              const vals=Object.values(calData);
+              const maxDay=Math.max(...vals,1);
+              const monthTotal=vals.reduce((s,v)=>s+v,0);
+              const activeDays=vals.filter(v=>v>0).length;
+              const busiest=Object.entries(calData).sort((a,b)=>b[1]-a[1])[0];
+              const monthName=first.toLocaleString("default",{month:"long",year:"numeric"});
+              const curKey=new Date().toISOString().slice(0,7);
+              const shift=delta=>{const d=new Date(yy,mm-1+delta,1);const nk=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;if(nk<=curKey){setCalMonth(nk);haptic(8);}};
+              const cells=[];for(let i=0;i<startDow;i++)cells.push(null);for(let d=1;d<=dim;d++)cells.push(d);
+              const atMax=calMonth>=curKey;
+              return(<>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+                  <button onClick={()=>shift(-1)} className="mt-press" style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:11,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>{I.back(T.acc)}</button>
+                  <div style={{fontWeight:700,fontSize:16}}>{monthName}</div>
+                  <button onClick={()=>shift(1)} disabled={atMax} className="mt-press" style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:11,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",cursor:atMax?"default":"pointer",opacity:atMax?.4:1}}>{I.back2(T.acc)}</button>
+                </div>
+                <div style={{background:T.card,borderRadius:18,padding:"14px",marginBottom:14}}>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:6,marginBottom:7}}>
+                    {["M","T","W","T","F","S","S"].map((d,i)=><div key={i} style={{textAlign:"center",fontSize:11,fontWeight:600,color:T.txt3}}>{d}</div>)}
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:6}}>
+                    {cells.map((d,i)=>{
+                      if(d===null)return <div key={i}/>;
+                      const key=`${calMonth}-${String(d).padStart(2,"0")}`;
+                      const sp=calData[key]||0;
+                      const a=sp>0?0.2+0.8*(sp/maxDay):0;
+                      const isToday=key===tod();
+                      return(
+                        <div key={i} style={{aspectRatio:"1",borderRadius:9,background:sp>0?`rgba(255,69,58,${a})`:T.bg,display:"flex",alignItems:"center",justifyContent:"center",border:isToday?`2px solid ${T.acc}`:"none"}}>
+                          <span style={{fontSize:12,fontWeight:600,color:a>0.5?"#fff":T.txt2}}>{d}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",gap:6,marginTop:12}}>
+                    <span style={{fontSize:10,color:T.txt3}}>Less</span>
+                    {[0.2,0.45,0.7,1].map(a=><div key={a} style={{width:13,height:13,borderRadius:4,background:`rgba(255,69,58,${a})`}}/>)}
+                    <span style={{fontSize:10,color:T.txt3}}>More</span>
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:11,marginBottom:busiest&&busiest[1]>0?14:90}}>
+                  <div style={{flex:1,background:T.card,borderRadius:16,padding:"14px"}}>
+                    <div style={{fontSize:12,color:T.txt2,fontWeight:600}}>Month total</div>
+                    <div style={{fontSize:20,fontWeight:700,color:T.red,marginTop:3}}>{fmt(monthTotal)}</div>
+                  </div>
+                  <div style={{flex:1,background:T.card,borderRadius:16,padding:"14px"}}>
+                    <div style={{fontSize:12,color:T.txt2,fontWeight:600}}>Active days</div>
+                    <div style={{fontSize:20,fontWeight:700,marginTop:3}}>{activeDays}<span style={{fontSize:13,color:T.txt3,fontWeight:500}}> / {dim}</span></div>
+                  </div>
+                </div>
+                {busiest&&busiest[1]>0&&(
+                  <div style={{background:T.card,borderRadius:16,padding:"14px 16px",marginBottom:90,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                    <div><div style={{fontSize:12,color:T.txt2,fontWeight:600}}>Busiest day</div><div style={{fontSize:15,fontWeight:600,marginTop:2}}>{busiest[0]}</div></div>
+                    <div style={{fontSize:18,fontWeight:700,color:T.red}}>{fmt(busiest[1])}</div>
+                  </div>
+                )}
+              </>);
+            })()}
           </>}
 
         </div>
       </div>
 
       {/* FAB */}
-      <button onClick={openAddPrefill}
-        style={{position:"fixed",right:20,bottom:"calc(env(safe-area-inset-bottom) + 86px)",width:64,height:64,borderRadius:32,background:T.acc,border:"none",boxShadow:"0 6px 30px rgba(0,122,255,.35)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
+      <button onClick={openAddPrefill} className="mt-press"
+        style={{position:"fixed",right:20,bottom:"calc(env(safe-area-inset-bottom) + 96px)",width:62,height:62,borderRadius:31,background:`linear-gradient(135deg,${T.acc},${dark?"#0a3a9c":"#0051d5"})`,border:"none",boxShadow:`0 8px 26px ${T.acc}66`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
         {I.plus("#fff",30)}
       </button>
 
-      {/* Bottom Tab Bar — 5 tabs */}
-      <div style={{background:T.card,flexShrink:0,padding:"12px 0 calc(env(safe-area-inset-bottom) + 14px)",boxShadow:dark?"0 -.5px 0 rgba(255,255,255,.07)":"0 -.5px 0 rgba(0,0,0,.1)"}}>
-        <div style={{display:"flex",padding:"0 0 10px"}}>
-          {TABS.map(({id,lbl,ic})=>{
-            const act=tab===id,col=act?T.acc:T.txt3;
-            const hasBadge=(id==="splits"&&(pendingSplits.length>0||recurringDue.length>0));
-            return(
-              <button key={id} onClick={()=>setTab(id)}
-                style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:"none",border:"none",cursor:"pointer",padding:"12px 0 10px",minHeight:56,color:col,position:"relative"}}>
-                {ic(col)}
-                {hasBadge&&<div style={{position:"absolute",top:8,right:"calc(50% - 12px)",width:8,height:8,borderRadius:99,background:T.red,border:"2px solid "+T.card}}/>}
-                {act? <span style={{fontSize:12,fontWeight:700}}>{lbl}</span> : null}
-              </button>
-            );
-          })}
+      {/* Floating frosted Tab Bar — 5 tabs */}
+      <div style={{position:"fixed",left:0,right:0,bottom:0,zIndex:90,paddingBottom:"calc(env(safe-area-inset-bottom) + 10px)",pointerEvents:"none"}}>
+        <div style={{maxWidth:480,margin:"0 auto",padding:"0 14px"}}>
+          <div style={{pointerEvents:"auto",display:"flex",gap:2,background:dark?"rgba(28,28,30,.78)":"rgba(255,255,255,.8)",backdropFilter:"saturate(180%) blur(22px)",WebkitBackdropFilter:"saturate(180%) blur(22px)",borderRadius:26,padding:"7px 6px",boxShadow:dark?"0 8px 32px rgba(0,0,0,.55)":"0 8px 32px rgba(0,0,0,.16)",border:`1px solid ${dark?"rgba(255,255,255,.08)":"rgba(0,0,0,.05)"}`}}>
+            {TABS.map(({id,lbl,ic})=>{
+              const act=tab===id,col=act?T.acc:T.txt3;
+              const hasBadge=(id==="splits"&&(pendingSplits.length>0||recurringDue.length>0));
+              return(
+                <button key={id} onClick={()=>{haptic(8);setTab(id);}} className="mt-press"
+                  style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2,background:act?T.acc+"18":"transparent",border:"none",cursor:"pointer",padding:"8px 0 6px",borderRadius:17,color:col,position:"relative",transition:"background .25s"}}>
+                  {ic(col)}
+                  {hasBadge&&<div style={{position:"absolute",top:6,right:"calc(50% - 14px)",width:8,height:8,borderRadius:99,background:T.red,border:`2px solid ${dark?"#262628":"#fff"}`}}/>}
+                  <span style={{fontSize:10.5,fontWeight:act?700:500,color:act?T.acc:T.txt3,letterSpacing:-.1}}>{lbl}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -1067,6 +1481,15 @@ function App(){
             <input type="date" value={txForm.date} onChange={e=>setTxForm(f=>({...f,date:e.target.value}))}
               style={{...inp,colorScheme:dark?"dark":"light"}}/>
           </div>
+        </div>
+        {/* Quick amount chips */}
+        <div style={{display:"flex",gap:7,marginBottom:14}}>
+          {[1,5,10,20,50].map(v=>(
+            <button key={v} onClick={()=>{haptic(8);setTxForm(f=>({...f,amount:String(Math.round(((parseFloat(f.amount)||0)+v)*100)/100)}));}}
+              style={{flex:1,padding:"9px 0",borderRadius:11,border:`1.5px solid ${T.border}`,background:T.bg,color:T.txt,fontWeight:600,fontSize:14,cursor:"pointer"}}>+{v}</button>
+          ))}
+          <button onClick={()=>{haptic(8);setTxForm(f=>({...f,amount:""}));}}
+            style={{padding:"9px 13px",borderRadius:11,border:`1.5px solid ${T.border}`,background:T.bg,color:T.red,fontWeight:700,fontSize:14,cursor:"pointer"}}>C</button>
         </div>
         <div style={{marginBottom:14}}>
           <Label text="Merchant / Payee"/>
@@ -1331,6 +1754,40 @@ function App(){
               <div style={{fontSize:12,color:T.txt2,marginTop:2}}>Create or remove expense categories</div>
             </div>
           </button>
+        </div>
+        <button onClick={()=>{setTab('stats');setAnaView('budget');closeM();}}
+          style={{display:"flex",alignItems:"center",gap:12,width:"100%",background:T.bg,border:`1.5px solid ${T.border}`,borderRadius:14,padding:"15px 16px",cursor:"pointer",textAlign:"left",marginBottom:24}}>
+          <div style={{width:40,height:40,borderRadius:12,background:T.acc+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{I.budget(T.acc,20)}</div>
+          <div>
+            <div style={{fontWeight:600,fontSize:15,color:T.txt}}>Set monthly budgets</div>
+            <div style={{fontSize:12,color:T.txt2,marginTop:1}}>Limits & alerts per category</div>
+          </div>
+        </button>
+        <div style={{marginBottom:10}}>
+          <Label text="Privacy & Preferences"/>
+        </div>
+        <div style={{background:T.bg,borderRadius:14,overflow:"hidden",marginBottom:24}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 16px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              {I.lock(T.acc,20)}
+              <div>
+                <div style={{fontWeight:600,fontSize:15,color:T.txt}}>App Lock</div>
+                <div style={{fontSize:12,color:T.txt2,marginTop:1}}>{pin?"Passcode enabled":"Require a 4-digit passcode"}</div>
+              </div>
+            </div>
+            <Toggle value={!!pin} onChange={v=>{v?enableLock():disableLock();}} T={T}/>
+          </div>
+          <div style={{height:1,background:T.border}}/>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 16px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <span style={{fontSize:20,width:20,textAlign:"center"}}>📳</span>
+              <div>
+                <div style={{fontWeight:600,fontSize:15,color:T.txt}}>Haptic feedback</div>
+                <div style={{fontSize:12,color:T.txt2,marginTop:1}}>Vibrate on taps & actions</div>
+              </div>
+            </div>
+            <Toggle value={hapticsOn} onChange={setHap} T={T}/>
+          </div>
         </div>
         <div style={{marginBottom:10}}>
           <Label text="Stats"/>
