@@ -37,7 +37,7 @@ select{-webkit-appearance:none}
 .mt-press{transition:transform .12s ease}
 .mt-press:active{transform:scale(.94)}
 .mt-row:active{filter:brightness(.97)}
-.mt-hscroll{display:flex;gap:11px;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 0 2px;margin:0 -16px;padding-left:16px;padding-right:16px}
+.mt-hscroll{display:flex;gap:11px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-left:16px;margin:0 -16px;padding:2px 16px}
 .mt-hscroll>*{scroll-snap-align:start;flex-shrink:0}
 </style>
 </head>
@@ -118,30 +118,44 @@ const I={
   back2:(c,s=20)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="9 6 15 12 9 18" transform="rotate(180 12 12)"/></svg>,
 };
 
-function MiniChart({data,T}){
+function MiniChart({data,T,fmt}){
+  const [sel,setSel]=useState(data.length-1);
+  const f=fmt||(v=>v);
+  const cur=data[sel]||data[data.length-1]||{label:"",income:0,spent:0};
   const max=Math.max(...data.flatMap(d=>[d.income,d.spent]),1);
   const W=300,H=140,bp=20,tp=8,aH=H-bp-tp;
   const sw=W/data.length,bw=Math.min(sw*.28,10);
   return(
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H}>
-      {[.33,.66,1].map(f=>(
-        <line key={f} x1={0} y1={tp+(1-f)*aH} x2={W} y2={tp+(1-f)*aH} stroke={T.border} strokeWidth={.5}/>
-      ))}
-      {data.map((d,i)=>{
-        const cx=(i+.5)*sw,iH=(d.income/max)*aH,sH=(d.spent/max)*aH;
-        return(
-          <g key={i}>
-            {iH>0&&<rect x={cx-bw-1} y={tp+aH-iH} width={bw} height={iH} fill={T.cG} rx={2}/>}
-            {sH>0&&<rect x={cx+1} y={tp+aH-sH} width={bw} height={sH} fill={T.cR} rx={2}/>}
-            <text x={cx} y={H-5} textAnchor="middle" fontSize={7.5} fill={T.txt3}>{d.label}</text>
-          </g>
-        );
-      })}
-      <rect x={W-54} y={tp+1} width={7} height={7} fill={T.cG} rx={1.5}/>
-      <text x={W-44} y={tp+7.5} fontSize={7.5} fill={T.txt2}>Income</text>
-      <rect x={W-54} y={tp+12} width={7} height={7} fill={T.cR} rx={1.5}/>
-      <text x={W-44} y={tp+18.5} fontSize={7.5} fill={T.txt2}>Spent</text>
-    </svg>
+    <div>
+      <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:8}}>
+        <span style={{fontSize:13,fontWeight:700,color:T.txt}}>{cur.label}</span>
+        <span style={{display:"flex",gap:12,fontSize:13,fontWeight:700}}>
+          <span style={{color:T.cG}}>↑ {f(cur.income)}</span>
+          <span style={{color:T.cR}}>↓ {f(cur.spent)}</span>
+        </span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{touchAction:"manipulation"}}>
+        {[.33,.66,1].map(fr=>(
+          <line key={fr} x1={0} y1={tp+(1-fr)*aH} x2={W} y2={tp+(1-fr)*aH} stroke={T.border} strokeWidth={.5}/>
+        ))}
+        {data.map((d,i)=>{
+          const cx=(i+.5)*sw,iH=(d.income/max)*aH,sH=(d.spent/max)*aH,on=i===sel;
+          return(
+            <g key={i} onClick={()=>setSel(i)} style={{cursor:"pointer"}}>
+              {on&&<rect x={cx-sw/2+1} y={tp} width={sw-2} height={aH} fill={T.acc} opacity={.10} rx={4}/>}
+              {iH>0&&<rect x={cx-bw-1} y={tp+aH-iH} width={bw} height={iH} fill={T.cG} rx={2} opacity={on?1:.5}/>}
+              {sH>0&&<rect x={cx+1} y={tp+aH-sH} width={bw} height={sH} fill={T.cR} rx={2} opacity={on?1:.5}/>}
+              <text x={cx} y={H-5} textAnchor="middle" fontSize={7.5} fill={on?T.txt:T.txt3} fontWeight={on?700:400}>{d.label}</text>
+              <rect x={cx-sw/2} y={0} width={sw} height={H} fill="transparent"/>
+            </g>
+          );
+        })}
+        <rect x={W-54} y={tp+1} width={7} height={7} fill={T.cG} rx={1.5}/>
+        <text x={W-44} y={tp+7.5} fontSize={7.5} fill={T.txt2}>Income</text>
+        <rect x={W-54} y={tp+12} width={7} height={7} fill={T.cR} rx={1.5}/>
+        <text x={W-44} y={tp+18.5} fontSize={7.5} fill={T.txt2}>Spent</text>
+      </svg>
+    </div>
   );
 }
 
@@ -291,6 +305,11 @@ function App(){
   const [hapticsOn,setHapticsOn]= useState(true);
   const [anaView,setAnaView]   = useState("spend"); // spend | budget | cal
   const [confetti,setConfetti] = useState(false);
+  const [splitBannerSeen,setSplitBannerSeen] = useState(false);
+  const [dismissedNotifs,setDismissedNotifs] = useState([]);
+  const [fabSide,setFabSide]   = useState("right");
+  const [fabTop,setFabTop]     = useState(null);
+  const [fabDrag,setFabDrag]   = useState(null);
   const [calMonth,setCalMonth] = useState(()=>new Date().toISOString().slice(0,7));
   const fileRef                = useRef();
 
@@ -328,6 +347,9 @@ function App(){
     const r=LS.g("mt-recurring")||[];
     setAccs(a);setCats(c);setTxs(t);setGoals(g);setRecurring(r);
     setBudgets(LS.g("mt-budgets")||{});
+    setDismissedNotifs(LS.g("mt-dismissed-notifs")||[]);
+    setFabSide(LS.g("mt-fab-side")||"right");
+    setFabTop(LS.g("mt-fab-top"));
     const savedPin=LS.g("mt-pin");
     if(savedPin){setPin(savedPin);setLocked(true);}
     const hp=LS.g("mt-haptics");setHapticsOn(hp===null?true:hp);
@@ -345,6 +367,25 @@ function App(){
   const sg=mkSet(setGoals,"mt-goals");
   const sr=mkSet(setRecurring,"mt-recurring");
   const sb=mkSet(setBudgets,"mt-budgets");
+  const sdn=mkSet(setDismissedNotifs,"mt-dismissed-notifs");
+  const sfab=mkSet(setFabSide,"mt-fab-side");
+  const sft=mkSet(setFabTop,"mt-fab-top");
+  // FAB drag: follow finger anywhere; on release snap X to nearest edge, keep Y where dropped
+  const onFabDown=e=>{
+    e.preventDefault();
+    const sx=e.clientX,sy=e.clientY;let moved=false;
+    const move=ev=>{if(Math.abs(ev.clientX-sx)>6||Math.abs(ev.clientY-sy)>6)moved=true;if(moved)setFabDrag({x:ev.clientX,y:ev.clientY});};
+    const up=ev=>{
+      window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);
+      setFabDrag(null);
+      if(moved){
+        sfab(ev.clientX<window.innerWidth/2?'left':'right');
+        sft(Math.max(8,Math.min(window.innerHeight-70,ev.clientY-31)));
+        haptic(12);
+      } else openAddPrefill();
+    };
+    window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);
+  };
   const setHap=v=>{setHapticsOn(v);LS.s("mt-haptics",v);};
   const tgDk=()=>{const nd=!dark;setDark(nd);LS.s("mt-dark",nd);};
 
@@ -450,6 +491,15 @@ function App(){
   const totalBudget=useMemo(()=>budgetData.reduce((s,b)=>s+b.limit,0),[budgetData]);
   const totalBudgetSpent=useMemo(()=>budgetData.reduce((s,b)=>s+b.spent,0),[budgetData]);
   const overBudget=useMemo(()=>budgetData.filter(b=>b.pct>1),[budgetData]);
+  const reachedGoals=useMemo(()=>goals.filter(g=>(parseFloat(g.targetAmount)||0)>0&&(parseFloat(g.savedAmount)||0)>=(parseFloat(g.targetAmount)||0)),[goals]);
+  const notifs=useMemo(()=>{
+    const a=[];
+    recurringDue.forEach(r=>a.push({k:"rec-"+r.id,icon:"💳",tone:"blue",title:r.merchant+" due soon",sub:"Recurring · day "+r.dayOfMonth,tab:"splits"}));
+    overBudget.forEach(b=>a.push({k:"ob-"+b.label,icon:"⚠️",tone:"red",title:b.label+" over budget",sub:Math.round(b.pct*100)+"% of limit used",tab:"stats",ana:"budget"}));
+    pendingSplits.forEach(t=>a.push({k:"ps-"+t.id,icon:"🧾",tone:"green",title:t.merchant,sub:"Split not settled",tab:"splits"}));
+    reachedGoals.forEach(g=>a.push({k:"g-"+g.id,icon:"🎉",tone:"green",title:g.name+" reached!",sub:"Savings goal complete",tab:"goals"}));
+    return a.filter(n=>!dismissedNotifs.includes(n.k));
+  },[recurringDue,overBudget,pendingSplits,reachedGoals,dismissedNotifs]);
 
   const safeToday=useMemo(()=>{
     if(totalBudget>0)return Math.max((totalBudget-totalBudgetSpent)/daysLeft,0);
@@ -773,6 +823,10 @@ function App(){
             {pin&&<button onClick={lockNow} className="mt-press" style={{background:T.bg,border:`1px solid ${T.border}`,borderRadius:10,padding:"7px 10px",cursor:"pointer",display:"flex",alignItems:"center",color:T.acc}}>
               {I.lock(T.acc,18)}
             </button>}
+            <button onClick={()=>setModal("notifs")} className="mt-press" style={{position:"relative",background:T.bg,border:`1px solid ${T.border}`,borderRadius:10,padding:"7px 10px",cursor:"pointer",display:"flex",alignItems:"center",color:T.acc}}>
+              {I.bell(T.txt2)}
+              {notifs.length>0&&<span style={{position:"absolute",top:3,right:4,minWidth:15,height:15,padding:"0 3px",borderRadius:99,background:T.red,color:"#fff",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",border:`1.5px solid ${T.bg}`}}>{notifs.length}</span>}
+            </button>
             <button onClick={()=>setModal("settings")} className="mt-press" style={{background:T.bg,border:`1px solid ${T.border}`,borderRadius:10,padding:"7px 10px",cursor:"pointer",display:"flex",alignItems:"center",color:T.acc}}>
               {I.settings(T.txt2)}
             </button>
@@ -789,13 +843,13 @@ function App(){
 
           {/* ══ HOME ══ */}
           {tab==="home"&&<>
-            <div className="mt-rise" style={{position:"relative",background:`linear-gradient(135deg,${T.acc} 0%,${dark?"#0a3a9c":"#0051d5"} 100%)`,borderRadius:24,padding:"22px 20px 18px",marginBottom:14,color:"#fff",boxShadow:`0 10px 30px ${T.acc}55`,overflow:"hidden"}}>
+            <div onClick={()=>setTab('accs')} className="mt-rise mt-press" style={{position:"relative",background:`linear-gradient(135deg,${T.acc} 0%,${dark?"#0a3a9c":"#0051d5"} 100%)`,borderRadius:24,padding:"22px 20px 18px",marginBottom:14,color:"#fff",boxShadow:`0 10px 30px ${T.acc}55`,overflow:"hidden",cursor:"pointer"}}>
               <div style={{position:"absolute",top:-44,right:-26,width:160,height:160,borderRadius:99,background:"rgba(255,255,255,.13)"}}/>
               <div style={{position:"absolute",bottom:-66,left:-24,width:150,height:150,borderRadius:99,background:"rgba(255,255,255,.07)"}}/>
               <div style={{position:"relative"}}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:3}}>
                   <div style={{fontSize:13,opacity:.85,fontWeight:500}}>Total Balance</div>
-                  <div style={{fontSize:11,opacity:.85,fontWeight:600,background:"rgba(255,255,255,.18)",padding:"3px 9px",borderRadius:99}}>{accs.length} account{accs.length!==1?"s":""}</div>
+                  <div style={{fontSize:11,opacity:.85,fontWeight:600,background:"rgba(255,255,255,.18)",padding:"3px 9px",borderRadius:99}}>{accs.length} account{accs.length!==1?"s":""} ›</div>
                 </div>
                 <AnimatedNumber value={totBal} format={fmt} style={{fontSize:40,fontWeight:700,letterSpacing:-.8,marginBottom:18,display:"block"}}/>
                 <div style={{display:"flex",gap:0,background:"rgba(255,255,255,.15)",borderRadius:14,overflow:"hidden"}}>
@@ -822,14 +876,14 @@ function App(){
             )}
 
             {/* WG banner */}
-            {pendingSplits.length>0&&(
+            {pendingSplits.length>0&&!splitBannerSeen&&(
               <div style={{background:dark?"#002e14":"#d4f5df",border:`1px solid ${dark?"#1a5c2a":"#86efac"}`,borderRadius:16,padding:"12px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
                 {I.split(dark?"#30d158":"#16a34a")}
                 <div style={{flex:1}}>
                   <div style={{fontWeight:600,fontSize:14,color:dark?"#30d158":"#15803d"}}>Others owe you {fmt(totalOwed)}</div>
                   <div style={{fontSize:12,color:dark?"#4ade80":"#16a34a",marginTop:1}}>{pendingSplits.length} unsettled split{pendingSplits.length>1?"s":""}</div>
                 </div>
-                <button onClick={()=>setTab("splits")} style={{background:"none",border:"none",color:dark?"#30d158":"#16a34a",fontSize:12,fontWeight:600,cursor:"pointer",padding:0}}>View</button>
+                <button onClick={()=>{setSplitBannerSeen(true);setTab("splits");}} style={{background:"none",border:"none",color:dark?"#30d158":"#16a34a",fontSize:12,fontWeight:600,cursor:"pointer",padding:0}}>View</button>
               </div>
             )}
 
@@ -886,8 +940,11 @@ function App(){
             )}
 
             <div style={{background:T.card,borderRadius:18,padding:"14px 14px 10px",marginBottom:14}}>
-              <div style={{fontWeight:600,fontSize:15,marginBottom:10}}>Income vs My Expenses</div>
-              <MiniChart data={chartD} T={T}/>
+              <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:10}}>
+                <span style={{fontWeight:600,fontSize:15}}>Income vs My Expenses</span>
+                <span style={{fontSize:11,color:T.txt3}}>tap a month</span>
+              </div>
+              <MiniChart data={chartD} T={T} fmt={fmt}/>
             </div>
 
             <div style={{background:T.card,borderRadius:18,marginBottom:14,overflow:"hidden"}}>
@@ -1434,9 +1491,9 @@ function App(){
         </div>
       </div>
 
-      {/* FAB */}
-      <button onClick={openAddPrefill} className="mt-press"
-        style={{position:"fixed",right:20,bottom:"calc(env(safe-area-inset-bottom) + 96px)",width:62,height:62,borderRadius:31,background:`linear-gradient(135deg,${T.acc},${dark?"#0a3a9c":"#0051d5"})`,border:"none",boxShadow:`0 8px 26px ${T.acc}66`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
+      {/* FAB — draggable, snaps to left/right edge; tap to add */}
+      <button onPointerDown={onFabDown} className="mt-press"
+        style={{position:"fixed",left:fabDrag?Math.max(8,Math.min(window.innerWidth-70,fabDrag.x-31)):(fabSide==='left'?20:window.innerWidth-82),top:Math.max(8,Math.min(window.innerHeight-70,fabDrag?fabDrag.y-31:(fabTop!=null?fabTop:window.innerHeight-158))),width:62,height:62,borderRadius:31,background:`linear-gradient(135deg,${T.acc},${dark?"#0a3a9c":"#0051d5"})`,border:"none",boxShadow:`0 8px 26px ${T.acc}66`,cursor:fabDrag?"grabbing":"grab",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,touchAction:"none",userSelect:"none",transition:fabDrag?"none":"left .28s cubic-bezier(.22,1,.36,1)"}}>
         {I.plus("#fff",30)}
       </button>
 
@@ -1703,6 +1760,34 @@ function App(){
           style={{display:"block",width:"100%",background:!recForm.merchant||!recForm.amount||!recForm.accountId?T.txt3:T.acc,color:"#fff",border:"none",borderRadius:15,padding:17,fontWeight:700,fontSize:17,cursor:!recForm.merchant||!recForm.amount||!recForm.accountId?"not-allowed":"pointer",marginBottom:4}}>
           {editId?"Save Changes":"Save Recurring"}
         </button>
+      </Sheet>
+
+      {/* ── Notifications Sheet ── */}
+      <Sheet open={modal==="notifs"} onClose={closeM} title="Notifications" T={T}>
+        {notifs.length===0?(
+          <div style={{textAlign:"center",padding:"30px 0 40px",color:T.txt3}}>
+            <div style={{fontSize:42,marginBottom:8}}>🔔</div>
+            <div style={{fontWeight:600,fontSize:15,color:T.txt2}}>You're all caught up</div>
+            <div style={{fontSize:13,marginTop:4}}>No reminders right now</div>
+          </div>
+        ):(
+          <div style={{display:"flex",flexDirection:"column",gap:10,paddingBottom:12}}>
+            {notifs.map(n=>{
+              const cc=({blue:T.acc,red:T.red,green:T.green})[n.tone]||T.acc;
+              return(
+                <button key={n.k} onClick={()=>{sdn([...dismissedNotifs,n.k]);setTab(n.tab);if(n.ana)setAnaView(n.ana);closeM();}} className="mt-press"
+                  style={{display:"flex",alignItems:"center",gap:12,background:T.bg,border:`1px solid ${T.border}`,borderRadius:14,padding:"13px 14px",cursor:"pointer",textAlign:"left",width:"100%"}}>
+                  <div style={{width:38,height:38,borderRadius:11,background:cc+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{n.icon}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:600,fontSize:14,color:T.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{n.title}</div>
+                    <div style={{fontSize:12,color:T.txt2,marginTop:1}}>{n.sub}</div>
+                  </div>
+                  <span style={{color:T.txt3,fontSize:18,flexShrink:0}}>›</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </Sheet>
 
       {/* ── Settings Sheet ── */}
