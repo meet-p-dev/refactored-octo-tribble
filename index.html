@@ -12,9 +12,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body,#root{min-height:100%;height:100%;overflow:hidden}
-body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',sans-serif;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;background:#f2f2f7}
-#root{min-height:100vh;max-width:480px;margin:0 auto;position:relative}
+html,body,#root{height:100%;overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',sans-serif;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
 input,select,button,textarea{font-family:inherit;font-size:16px;-webkit-tap-highlight-color:transparent}
 button{touch-action:manipulation}
 input:focus,select:focus,textarea:focus{outline:none}
@@ -71,16 +70,31 @@ const LS={
 const fmt=n=>new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR"}).format(n||0);
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2);
 const tod=()=>new Date().toISOString().slice(0,10);
-const gc=id=>CATS.find(c=>c.id===id)||{icon:"📦",color:"#9ca3af",label:id||"Other"};
-const haptic=(ms=10)=>{try{if(window.__mtHaptics!==false&&navigator.vibrate)navigator.vibrate(ms);}catch{}};
+// personal share helper — used everywhere for consistent expense amounts
+const personalAmt=t=>{
+  const v=parseFloat(t.amount)||0;
+  return t.isSplit&&t.type==="expense"?v/Math.max(t.splitPeople||1,1):v;
+};
+const haptic=(ms=10)=>{
+  try{
+    if(window.__mtHaptics===false)return;
+    if(navigator.vibrate){navigator.vibrate(ms);return;}
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);
+    g.gain.setValueAtTime(0,ctx.currentTime);
+    o.start(ctx.currentTime);o.stop(ctx.currentTime+0.01);
+    ctx.close();
+  }catch{}
+};
 
 const I={
   home:c=><svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d="M3 12L12 4l9 8"/><path d="M5 10.5V20h5v-5h4v5h5V10.5"/></svg>,
   list:c=><svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.7} strokeLinecap="round"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill={c} stroke="none"/><circle cx="4" cy="12" r="1.5" fill={c} stroke="none"/><circle cx="4" cy="18" r="1.5" fill={c} stroke="none"/></svg>,
-  wallet:c=><svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="3"/><path d="M2 7.5L12 3l10 4.5"/><circle cx="17" cy="14" r="1.5" fill={c} stroke="none"/></svg>,
-  chart:c=><svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.7} strokeLinecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
   people:c=><svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="7" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="18" cy="8" r="2.5"/><path d="M21 20c0-2.8-1.9-5-4.5-5.5"/></svg>,
   goal:c=><svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+  chart:c=><svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.7} strokeLinecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
+  wallet:c=><svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="3"/><path d="M2 7.5L12 3l10 4.5"/><circle cx="17" cy="14" r="1.5" fill={c} stroke="none"/></svg>,
   plus:(c,s=26)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2.2} strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
   edit:c=><svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>,
   trash:c=><svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>,
@@ -155,10 +169,7 @@ function Sheet({open,onClose,title,T,children}){
   );
 }
 
-function Label({text}){
-  return <div style={{fontSize:12,fontWeight:600,color:"#8e8e93",textTransform:"uppercase",letterSpacing:.5,marginBottom:7}}>{text}</div>;
-}
-
+function Label({text}){return <div style={{fontSize:12,fontWeight:600,color:"#8e8e93",textTransform:"uppercase",letterSpacing:.5,marginBottom:7}}>{text}</div>;}
 function Toggle({value,onChange,T}){
   return(
     <div onClick={()=>{haptic(10);onChange(!value);}} style={{width:51,height:31,borderRadius:99,background:value?T.acc:T.border,cursor:"pointer",position:"relative",transition:"background .25s",flexShrink:0}}>
@@ -166,25 +177,17 @@ function Toggle({value,onChange,T}){
     </div>
   );
 }
-
 function AnimatedNumber({value,format,style}){
-  const [d,setD]=useState(value);
-  const ref=useRef(value);
+  const [d,setD]=useState(value);const ref=useRef(value);
   useEffect(()=>{
     const from=ref.current,to=value||0,start=performance.now();
     if(from===to){setD(to);return;}
     let raf;
-    const tick=now=>{
-      const t=Math.min((now-start)/700,1),e=1-Math.pow(1-t,3);
-      setD(from+(to-from)*e);
-      if(t<1)raf=requestAnimationFrame(tick);else{ref.current=to;setD(to);}
-    };
-    raf=requestAnimationFrame(tick);
-    return()=>cancelAnimationFrame(raf);
+    const tick=now=>{const t=Math.min((now-start)/700,1),e=1-Math.pow(1-t,3);setD(from+(to-from)*e);if(t<1)raf=requestAnimationFrame(tick);else{ref.current=to;setD(to);}};
+    raf=requestAnimationFrame(tick);return()=>cancelAnimationFrame(raf);
   },[value]);
   return <span style={style}>{format?format(d):Math.round(d)}</span>;
 }
-
 function Ring({pct,size=66,stroke=7,color,track,children}){
   const r=(size-stroke)/2,c=2*Math.PI*r,off=c*(1-Math.min(Math.max(pct||0,0),1));
   return(
@@ -197,29 +200,19 @@ function Ring({pct,size=66,stroke=7,color,track,children}){
     </div>
   );
 }
-
 function Confetti({show}){
-  const pieces=useMemo(()=>Array.from({length:60},(_,i)=>({
-    id:i,left:Math.random()*100,delay:Math.random()*.45,dur:1.7+Math.random()*1.5,
-    color:["#ff453a","#30d158","#0a84ff","#ffd60a","#bf5af2","#ff9f0a"][i%6],
-    w:6+Math.random()*7,rot:Math.random()*360
-  })),[show]);
+  const pieces=useMemo(()=>Array.from({length:60},(_,i)=>({id:i,left:Math.random()*100,delay:Math.random()*.45,dur:1.7+Math.random()*1.5,color:["#ff453a","#30d158","#0a84ff","#ffd60a","#bf5af2","#ff9f0a"][i%6],w:6+Math.random()*7,rot:Math.random()*360})),[show]);
   if(!show)return null;
   return(
     <div style={{position:"fixed",inset:0,zIndex:998,pointerEvents:"none",overflow:"hidden"}}>
-      {pieces.map(p=>(
-        <div key={p.id} style={{position:"absolute",top:0,left:p.left+"%",width:p.w,height:p.w*.62,background:p.color,borderRadius:2,transform:`rotate(${p.rot}deg)`,animation:`mtConfetti ${p.dur}s ${p.delay}s ease forwards`}}/>
-      ))}
+      {pieces.map(p=><div key={p.id} style={{position:"absolute",top:0,left:p.left+"%",width:p.w,height:p.w*.62,background:p.color,borderRadius:2,transform:`rotate(${p.rot}deg)`,animation:`mtConfetti ${p.dur}s ${p.delay}s ease forwards`}}/>)}
     </div>
   );
 }
-
 function PinLock({T,mode,storedPin,onDone,onCancel}){
   const [stage,setStage]=useState(mode==="set"?"new":"enter");
-  const [first,setFirst]=useState("");
-  const [entry,setEntry]=useState("");
-  const [shake,setShake]=useState(false);
-  const [err,setErr]=useState("");
+  const [first,setFirst]=useState("");const [entry,setEntry]=useState("");
+  const [shake,setShake]=useState(false);const [err,setErr]=useState("");
   const titles={enter:"Enter Passcode",new:"Create Passcode",confirm:"Confirm Passcode"};
   const subs={enter:"Unlock MoneyTrack",new:"Choose a 4-digit code",confirm:"Re-enter your code"};
   const fail=msg=>{setShake(true);setErr(msg||"");haptic([30,40,30]);setTimeout(()=>{setShake(false);setEntry("");setErr("");},520);};
@@ -237,9 +230,7 @@ function PinLock({T,mode,storedPin,onDone,onCancel}){
       <div style={{fontWeight:700,fontSize:22,color:T.txt}}>{titles[stage]}</div>
       <div style={{fontSize:14,color:err?T.red:T.txt2,marginTop:5,height:18,fontWeight:err?600:400}}>{err||subs[stage]}</div>
       <div style={{display:"flex",gap:18,margin:"26px 0 34px",animation:shake?"mtShake .5s":"none"}}>
-        {[0,1,2,3].map(i=>(
-          <div key={i} style={{width:15,height:15,borderRadius:99,background:i<entry.length?(err?T.red:T.acc):"transparent",border:`2px solid ${i<entry.length?(err?T.red:T.acc):T.inpB}`,transition:"all .15s"}}/>
-        ))}
+        {[0,1,2,3].map(i=><div key={i} style={{width:15,height:15,borderRadius:99,background:i<entry.length?(err?T.red:T.acc):"transparent",border:`2px solid ${i<entry.length?(err?T.red:T.acc):T.inpB}`,transition:"all .15s"}}/>)}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(3,76px)",gap:16}}>
         {keys.map((k,i)=>k===""?<div key={i}/>:k==="del"?(
@@ -278,9 +269,10 @@ function App(){
   const [hapticsOn,setHapticsOn] =useState(true);
   const [anaView,setAnaView]     =useState("spend");
   const [confetti,setConfetti]   =useState(false);
-  // BUG FIX 4 — persisted to localStorage
-  const [splitBannerSeen,setSplitBannerSeen]=useState(()=>LS.g("mt-split-banner")||false);
-  const [dismissedNotifs,setDismissedNotifs]=useState([]);
+  const [splitBannerSeen,setSplitBannerSeen]     =useState(()=>LS.g("mt-split-banner")||false);
+  const [recurringBannerSeen,setRecurringBannerSeen]=useState(()=>LS.g("mt-rec-banner")||false);
+  const [debtBannerSeen,setDebtBannerSeen]       =useState(()=>LS.g("mt-debt-banner")||false);
+  const [dismissedNotifs,setDismissedNotifs]     =useState([]);
   const [fabSide,setFabSide]     =useState("right");
   const [fabTop,setFabTop]       =useState(null);
   const [fabDrag,setFabDrag]     =useState(null);
@@ -288,7 +280,6 @@ function App(){
   const [peopleView,setPeopleView]=useState("splits");
   const fileRef=useRef();
   const T=dark?DK:LT;
-
   useEffect(()=>{window.__mtHaptics=hapticsOn;},[hapticsOn]);
   const fireConfetti=()=>{setConfetti(true);haptic([12,40,12,40,18]);setTimeout(()=>setConfetti(false),2600);};
 
@@ -297,7 +288,7 @@ function App(){
   const iCat={label:"",icon:"📦",color:"#9ca3af"};
   const iGoal={name:"",targetAmount:"",savedAmount:"",icon:"🎯",color:"#007aff"};
   const iRec={merchant:"",amount:"",category:"other",accountId:"",type:"expense",dayOfMonth:1,active:true,notes:""};
-  const iDebt={personName:"",totalAmount:"",paidBack:"0",date:tod(),description:"",color:"#e11d48"};
+  const iDebt={personName:"",totalAmount:"",paidBack:"0",date:tod(),description:"",color:"#e11d48",receivedInAccount:""};
   const iRepay={debtId:"",amount:"",date:tod(),accountId:"",notes:""};
 
   const [txForm,setTxForm]       =useState(iTx);
@@ -323,7 +314,9 @@ function App(){
     const db=LS.g("mt-debts")||[];
     setAccs(a);setCats(c);setTxs(t);setGoals(g);setRecurring(r);setDebts(db);
     setBudgets(LS.g("mt-budgets")||{});
-    setDismissedNotifs(LS.g("mt-dismissed-notifs")||[]);
+    // prune stale dismissed notif IDs to prevent unbounded growth
+    const dn=LS.g("mt-dismissed-notifs")||[];
+    setDismissedNotifs(dn.slice(-200));
     setFabSide(LS.g("mt-fab-side")||"right");
     setFabTop(LS.g("mt-fab-top"));
     const sp=LS.g("mt-pin");if(sp){setPin(sp);setLocked(true);}
@@ -341,19 +334,23 @@ function App(){
   const sr=mkSet(setRecurring,"mt-recurring");
   const sd=mkSet(setDebts,"mt-debts");
   const sb=mkSet(setBudgets,"mt-budgets");
-  const sdn=mkSet(setDismissedNotifs,"mt-dismissed-notifs");
+  const sdn=v=>{const next=typeof v==="function"?v(dismissedNotifs):v;const pruned=next.slice(-200);setDismissedNotifs(pruned);LS.s("mt-dismissed-notifs",pruned);};
 
+  const FAB_YMIN=70,FAB_YMAX=()=>window.innerHeight-88;
   const onFabDown=e=>{
     e.preventDefault();
     const sx=e.clientX,sy=e.clientY;let moved=false;
-    const move=ev=>{if(Math.abs(ev.clientX-sx)>6||Math.abs(ev.clientY-sy)>6)moved=true;if(moved)setFabDrag({x:ev.clientX,y:ev.clientY});};
+    const move=ev=>{
+      if(Math.abs(ev.clientX-sx)>6||Math.abs(ev.clientY-sy)>6)moved=true;
+      if(moved)setFabDrag({x:ev.clientX,y:Math.max(FAB_YMIN+31,Math.min(FAB_YMAX()+31,ev.clientY))});
+    };
     const up=ev=>{
       window.removeEventListener("pointermove",move);window.removeEventListener("pointerup",up);
       setFabDrag(null);
       if(moved){
         const ns=ev.clientX<window.innerWidth/2?"left":"right";
         setFabSide(ns);LS.s("mt-fab-side",ns);
-        const nt=Math.max(8,Math.min(window.innerHeight-70,ev.clientY-31));
+        const nt=Math.max(FAB_YMIN,Math.min(FAB_YMAX(),ev.clientY-31));
         setFabTop(nt);LS.s("mt-fab-top",nt);
         haptic(12);
       }else openAddPrefill();
@@ -365,7 +362,7 @@ function App(){
   const setHap=v=>{setHapticsOn(v);LS.s("mt-haptics",v);};
   const getCat=id=>cats.find(c=>c.id===id)||CATS.find(c=>c.id===id)||{icon:"📦",color:"#9ca3af",label:id||"Other"};
 
-  const getBal=aid=>{
+  const getBal=useMemo(()=>(aid)=>{
     const a=accs.find(x=>x.id===aid);if(!a)return 0;
     let b=parseFloat(a.ib)||0;
     txs.forEach(t=>{
@@ -376,28 +373,37 @@ function App(){
       if(t.type==="transfer"&&t.toAccountId===aid)b+=v;
     });
     return b;
-  };
+  },[accs,txs]);
 
-  const totBal=useMemo(()=>accs.reduce((s,a)=>s+getBal(a.id),0),[accs,txs]);
+  // FIX: totBal uses same memo as getBal — no stale closure
+  const totBal=useMemo(()=>accs.reduce((s,a)=>s+getBal(a.id),0),[getBal,accs]);
+
   const mLbl=new Date().toLocaleString("default",{month:"long"});
+  const now0=new Date();
+  const monthKey=now0.toISOString().slice(0,7);
+  const daysInMonth=new Date(now0.getFullYear(),now0.getMonth()+1,0).getDate();
+  const dayOfMonth=now0.getDate();
+  const daysLeft=Math.max(daysInMonth-dayOfMonth+1,1);
+
   const mSt=useMemo(()=>{
-    const k=new Date().toISOString().slice(0,7);
-    const m=txs.filter(t=>t.date.startsWith(k));
+    const m=txs.filter(t=>t.date.startsWith(monthKey));
     return{
       inc:m.filter(t=>t.type==="income").reduce((s,t)=>s+parseFloat(t.amount),0),
-      spt:m.filter(t=>t.type==="expense").reduce((s,t)=>s+(t.isSplit?parseFloat(t.amount)/t.splitPeople:parseFloat(t.amount)),0),
+      // FIX: use personal share for expenses
+      spt:m.filter(t=>t.type==="expense").reduce((s,t)=>s+personalAmt(t),0),
     };
   },[txs]);
 
   const chartD=useMemo(()=>{
-    const now=new Date();
+    const n=new Date();
     return Array.from({length:12},(_,i)=>{
-      const d=new Date(now.getFullYear(),now.getMonth()-(11-i),1);
+      const d=new Date(n.getFullYear(),n.getMonth()-(11-i),1);
       const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
       return{
         label:d.toLocaleString("default",{month:"short"}),
         income:txs.filter(t=>t.type==="income"&&t.date.startsWith(k)).reduce((s,t)=>s+parseFloat(t.amount),0),
-        spent:txs.filter(t=>t.type==="expense"&&t.date.startsWith(k)).reduce((s,t)=>s+(t.isSplit?parseFloat(t.amount)/t.splitPeople:parseFloat(t.amount)),0),
+        // FIX: personal share for expenses in chart
+        spent:txs.filter(t=>t.type==="expense"&&t.date.startsWith(k)).reduce((s,t)=>s+personalAmt(t),0),
       };
     });
   },[txs]);
@@ -407,7 +413,8 @@ function App(){
     txs.filter(t=>t.type==="expense").forEach(t=>{
       const c=t.category||"other";
       if(!map[c])map[c]={total:0,merchants:{}};
-      const a=t.isSplit?parseFloat(t.amount)/t.splitPeople:parseFloat(t.amount);
+      // FIX: personal share
+      const a=personalAmt(t);
       map[c].total+=a;
       const m=t.merchant||"Unknown";
       map[c].merchants[m]=(map[c].merchants[m]||0)+a;
@@ -425,33 +432,21 @@ function App(){
 
   const recTxs=useMemo(()=>[...txs].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8),[txs]);
   const pendingSplits=useMemo(()=>txs.filter(t=>t.isSplit&&!t.splitSettled&&t.type==="expense"),[txs]);
-  const totalOwed=useMemo(()=>pendingSplits.reduce((s,t)=>{const f=parseFloat(t.amount)||0;return s+(f-f/t.splitPeople);},0),[pendingSplits]);
+  const totalOwed=useMemo(()=>pendingSplits.reduce((s,t)=>{const f=parseFloat(t.amount)||0;return s+(f-f/Math.max(t.splitPeople||1,1));},0),[pendingSplits]);
   const recurringDue=useMemo(()=>{const dom=new Date().getDate();return recurring.filter(r=>r.active&&r.dayOfMonth>=dom&&r.dayOfMonth<=dom+3);},[recurring]);
   const activeDebts=useMemo(()=>debts.filter(d=>!d.settled),[debts]);
   const settledDebts=useMemo(()=>debts.filter(d=>d.settled),[debts]);
   const totalDebt=useMemo(()=>activeDebts.reduce((s,d)=>s+(d.totalAmount-d.paidBack),0),[activeDebts]);
 
-  const now0=new Date();
-  const monthKey=now0.toISOString().slice(0,7);
-  const daysInMonth=new Date(now0.getFullYear(),now0.getMonth()+1,0).getDate();
-  const dayOfMonth=now0.getDate();
-  const daysLeft=Math.max(daysInMonth-dayOfMonth+1,1);
-
   const monthCatSpent=useMemo(()=>{
     const m={};
     txs.filter(t=>t.type==="expense"&&t.date.startsWith(monthKey)).forEach(t=>{
-      const a=t.isSplit?parseFloat(t.amount)/t.splitPeople:parseFloat(t.amount);
-      m[t.category||"other"]=(m[t.category||"other"]||0)+a;
+      m[t.category||"other"]=(m[t.category||"other"]||0)+personalAmt(t);
     });
     return m;
   },[txs]);
 
-  const budgetData=useMemo(()=>cats
-    .map(c=>({...c,limit:parseFloat(budgets[c.id])||0,spent:monthCatSpent[c.id]||0}))
-    .filter(b=>b.limit>0)
-    .map(b=>({...b,pct:b.spent/b.limit}))
-    .sort((a,b)=>b.pct-a.pct)
-  ,[cats,budgets,monthCatSpent]);
+  const budgetData=useMemo(()=>cats.map(c=>({...c,limit:parseFloat(budgets[c.id])||0,spent:monthCatSpent[c.id]||0})).filter(b=>b.limit>0).map(b=>({...b,pct:b.spent/b.limit})).sort((a,b)=>b.pct-a.pct),[cats,budgets,monthCatSpent]);
   const totalBudget=useMemo(()=>budgetData.reduce((s,b)=>s+b.limit,0),[budgetData]);
   const totalBudgetSpent=useMemo(()=>budgetData.reduce((s,b)=>s+b.spent,0),[budgetData]);
   const overBudget=useMemo(()=>budgetData.filter(b=>b.pct>1),[budgetData]);
@@ -462,6 +457,8 @@ function App(){
   },[totalBudget,totalBudgetSpent,mSt,daysLeft]);
 
   const reachedGoals=useMemo(()=>goals.filter(g=>parseFloat(g.targetAmount)>0&&parseFloat(g.savedAmount)>=parseFloat(g.targetAmount)),[goals]);
+  const mxCat=catD[0]?.total||1;
+
   const notifs=useMemo(()=>{
     const a=[];
     recurringDue.forEach(r=>a.push({k:"rec-"+r.id,icon:"💳",tone:"blue",title:r.merchant+" due soon",sub:"Recurring · day "+r.dayOfMonth,tab:"splits",pv:"recurring"}));
@@ -477,52 +474,49 @@ function App(){
     const dailyAvg=mSt.spt/Math.max(dayOfMonth,1),projected=dailyAvg*daysInMonth;
     const lm=new Date(now0.getFullYear(),now0.getMonth()-1,1);
     const lmKey=`${lm.getFullYear()}-${String(lm.getMonth()+1).padStart(2,"0")}`;
-    const lmSpent=txs.filter(t=>t.type==="expense"&&t.date.startsWith(lmKey)).reduce((s,t)=>s+(t.isSplit?parseFloat(t.amount)/t.splitPeople:parseFloat(t.amount)),0);
+    const lmSpent=txs.filter(t=>t.type==="expense"&&t.date.startsWith(lmKey)).reduce((s,t)=>s+personalAmt(t),0);
     const expTx=txs.filter(t=>t.type==="expense"&&t.date.startsWith(monthKey));
     if(mSt.inc>0){const r=Math.round((mSt.inc-mSt.spt)/mSt.inc*100);list.push({icon:"💎",label:"Savings rate",value:r+"%",sub:r>=20?"Great!":"Aim for 20%+",tone:r>=20?"green":r>=0?"blue":"red"});}
-    if(mSt.spt>0)list.push({icon:"📈",label:"Projected spend",value:fmt(projected),sub:"by month-end",tone:"blue"});
+    // FIX: only show projected spend if at least 5 days have passed (avoids day-1 scariness)
+    if(mSt.spt>0&&dayOfMonth>=5)list.push({icon:"📈",label:"Projected spend",value:fmt(projected),sub:"by month-end",tone:"blue"});
     if(lmSpent>0){const diff=Math.round((mSt.spt-lmSpent)/lmSpent*100);list.push({icon:diff<=0?"🎉":"⚠️",label:"vs last month",value:(diff>0?"+":"")+diff+"%",sub:diff<=0?"less spending":"more spending",tone:diff<=0?"green":"red"});}
     list.push({icon:"📅",label:"Daily average",value:fmt(dailyAvg),sub:`over ${dayOfMonth} days`,tone:"blue"});
-    if(expTx.length){
-      const big=expTx.reduce((a,b)=>parseFloat(b.amount)>parseFloat(a.amount)?b:a);
-      list.push({icon:"🔥",label:"Biggest expense",value:fmt(parseFloat(big.amount)),sub:big.merchant||"—",tone:"red"});
-    }
+    if(expTx.length){const big=expTx.reduce((a,b)=>parseFloat(b.amount)>parseFloat(a.amount)?b:a);list.push({icon:"🔥",label:"Biggest expense",value:fmt(parseFloat(big.amount)),sub:big.merchant||"—",tone:"red"});}
     return list;
   },[txs,mSt,dayOfMonth,daysInMonth]);
 
   const calData=useMemo(()=>{
     const m={};
     txs.filter(t=>t.type==="expense"&&t.date.startsWith(calMonth)).forEach(t=>{
-      const a=t.isSplit?parseFloat(t.amount)/t.splitPeople:parseFloat(t.amount);
-      m[t.date]=(m[t.date]||0)+a;
+      m[t.date]=(m[t.date]||0)+personalAmt(t);
     });
     return m;
   },[txs,calMonth]);
 
   const closeM=()=>{setModal(null);setEditId(null);setTxForm(iTx);setAccForm(iAcc);setGoalForm(iGoal);setRecForm(iRec);setDebtForm(iDebt);setRepayForm(iRepay);setCatForm(iCat);};
 
-  // BUG FIX 1: _settleIds only marks splits settled when user actually saves
   const doAddTx=()=>{
     if(!txForm.amount||!txForm.accountId)return;
+    // FIX: guard transfer toAccountId in save function too
+    if(txForm.type==="transfer"&&!txForm.toAccountId)return;
     const {_settleIds,...cleanForm}=txForm;
     const settleIds=_settleIds||[];
     const tx={...cleanForm,id:editId||uid(),amount:parseFloat(txForm.amount),splitPeople:txForm.isSplit?parseInt(txForm.splitPeople)||2:1};
     const base=editId?txs.map(t=>t.id===editId?tx:t):[tx,...txs];
     const newTxs=settleIds.length?base.map(t=>settleIds.includes(t.id)?{...t,splitSettled:true}:t):base;
     st(newTxs);
+    // FIX: only reset split banner for split transactions
     if(tx.isSplit){setSplitBannerSeen(false);LS.s("mt-split-banner",false);}
     try{localStorage.setItem("mt-last-account",tx.accountId);localStorage.setItem("mt-last-category",tx.category);}catch{}
     showToast(editId?"Transaction updated":"Transaction added",true,()=>st(prev=>prev.filter(t=>t.id!==tx.id)));
     closeM();
   };
 
-  // BUG FIX 2: always use doDeleteTx for undo support
   const doDeleteTx=id=>{
     const old=txs.find(t=>t.id===id);if(!old)return;
     st(txs.filter(t=>t.id!==id));
     showToast("Transaction deleted",true,()=>st(prev=>[old,...prev]));
   };
-
   const doEditTx=t=>{setTxForm({...iTx,...t});setEditId(t.id);setModal("tx");};
   const openAddPrefill=()=>{
     const la=localStorage.getItem("mt-last-account");
@@ -539,7 +533,7 @@ function App(){
   };
   const delAcc=id=>{
     const a=accs.find(x=>x.id===id);if(!a||!confirm(`Delete "${a.name}"?`))return;
-    sa(accs.filter(x=>x.id!==id));showToast("Account deleted",true,()=>sa(prev=>[a,...prev]));
+    sa(prev=>prev.filter(x=>x.id!==id));showToast("Account deleted",true,()=>sa(prev=>[a,...prev]));
   };
   const doEditAcc=a=>{setAccForm({name:a.name,color:a.color,ib:String(a.ib)});setEditId(a.id);setModal("acc");};
 
@@ -552,7 +546,7 @@ function App(){
   };
   const delCat=id=>{
     const c=cats.find(x=>x.id===id);if(!c||!confirm(`Delete "${c.label}"?`))return;
-    sc(cats.filter(x=>x.id!==id));showToast("Category deleted");
+    sc(prev=>prev.filter(x=>x.id!==id));showToast("Category deleted");
   };
   const doEditCat=c=>{setCatForm({label:c.label,icon:c.icon,color:c.color});setEditId(c.id);setModal("cat");};
 
@@ -566,7 +560,7 @@ function App(){
   };
   const delGoal=id=>{
     const g=goals.find(x=>x.id===id);if(!g||!confirm(`Delete "${g.name}"?`))return;
-    sg(goals.filter(x=>x.id!==id));showToast("Goal deleted",true,()=>sg(prev=>[g,...prev]));
+    sg(prev=>prev.filter(x=>x.id!==id));showToast("Goal deleted",true,()=>sg(prev=>[g,...prev]));
   };
   const doEditGoal=g=>{setGoalForm({name:g.name,targetAmount:String(g.targetAmount),savedAmount:String(g.savedAmount),icon:g.icon,color:g.color});setEditId(g.id);setModal("goal");};
 
@@ -574,11 +568,13 @@ function App(){
     if(!recForm.merchant||!recForm.amount||!recForm.accountId)return;
     const r={...recForm,id:editId||uid(),amount:parseFloat(recForm.amount)||0,dayOfMonth:parseInt(recForm.dayOfMonth)||1};
     sr(editId?recurring.map(x=>x.id===editId?r:x):[...recurring,r]);
+    // FIX: reset recurring banner only when a new recurring is added
+    if(!editId){setRecurringBannerSeen(false);LS.s("mt-rec-banner",false);}
     showToast(editId?"Recurring updated":"Recurring added");closeM();
   };
   const delRec=id=>{
     const r=recurring.find(x=>x.id===id);if(!r||!confirm(`Delete "${r.merchant}"?`))return;
-    sr(recurring.filter(x=>x.id!==id));showToast("Recurring deleted");
+    sr(prev=>prev.filter(x=>x.id!==id));showToast("Recurring deleted");
   };
   const addRecurringNow=r=>{
     const tx={id:uid(),type:r.type,amount:r.amount,merchant:r.merchant,category:r.category,accountId:r.accountId,notes:r.notes||"",date:tod(),isSplit:false,splitPeople:1,splitSettled:false};
@@ -588,36 +584,64 @@ function App(){
   // Debts
   const doAddDebt=()=>{
     if(!debtForm.personName||!debtForm.totalAmount)return;
-    const total=parseFloat(debtForm.totalAmount)||0,paid=parseFloat(debtForm.paidBack)||0;
+    const total=parseFloat(debtForm.totalAmount)||0;
+    // FIX: paidBack cannot exceed totalAmount
+    const paid=Math.min(parseFloat(debtForm.paidBack)||0,total);
     const wasSettled=editId?debts.find(x=>x.id===editId)?.settled:false;
     const d={...debtForm,id:editId||uid(),totalAmount:total,paidBack:paid,settled:paid>=total&&total>0};
-    sd(editId?debts.map(x=>x.id===editId?d:x):[d,...debts]);
+    sd(prev=>editId?prev.map(x=>x.id===editId?d:x):[d,...prev]);
+    if(!editId){
+      const newTxs=[];
+      // income tx — money received into account
+      if(debtForm.receivedInAccount){
+        newTxs.push({id:uid(),type:"income",amount:total,merchant:`Borrowed from ${debtForm.personName}`,category:"other",accountId:debtForm.receivedInAccount,notes:`Debt: ${debtForm.description||debtForm.personName}`,date:debtForm.date,isSplit:false,splitPeople:1,splitSettled:false});
+      }
+      // FIX: if paidBack > 0, create expense tx for prior repayments
+      if(paid>0&&debtForm.receivedInAccount){
+        newTxs.push({id:uid(),type:"expense",amount:paid,merchant:`Repayment → ${debtForm.personName}`,category:"other",accountId:debtForm.receivedInAccount,notes:"Prior repayment (entered at debt creation)",date:tod(),isSplit:false,splitPeople:1,splitSettled:false});
+      }
+      if(newTxs.length)st(prev=>[...newTxs,...prev]);
+      // FIX: reset debt banner only when new debt added
+      setDebtBannerSeen(false);LS.s("mt-debt-banner",false);
+    }
     if(d.settled&&!wasSettled)fireConfetti();
-    showToast(editId?"Debt updated":"Debt added");closeM();
+    showToast(editId?"Debt updated":"Debt added"+(debtForm.receivedInAccount&&!editId?" · balance updated":""));
+    closeM();
   };
+
+  // FIX: delDebt uses functional updater — not stale closure
   const delDebt=id=>{
-    const d=debts.find(x=>x.id===id);if(!d||!confirm(`Delete debt for "${d.personName}"?`))return;
-    sd(debts.filter(x=>x.id!==id));showToast("Debt deleted",true,()=>sd(prev=>[d,...prev]));
+    const d=debts.find(x=>x.id===id);
+    if(!d)return;
+    if(!confirm(`Delete debt for "${d.personName}"?`))return;
+    sd(prev=>prev.filter(x=>x.id!==id));
+    showToast("Debt deleted",true,()=>sd(prev=>[d,...prev]));
   };
-  const doEditDebt=d=>{setDebtForm({personName:d.personName,totalAmount:String(d.totalAmount),paidBack:String(d.paidBack),date:d.date,description:d.description||"",color:d.color||"#e11d48"});setEditId(d.id);setModal("debt");};
-  const openRepay=d=>{setRepayForm({...iRepay,debtId:d.id,accountId:accs[0]?.id||""});setModal("repay");};
+
+  const doEditDebt=d=>{setDebtForm({personName:d.personName,totalAmount:String(d.totalAmount),paidBack:String(d.paidBack),date:d.date,description:d.description||"",color:d.color||"#e11d48",receivedInAccount:d.receivedInAccount||""});setEditId(d.id);setModal("debt");};
+  const openRepay=d=>{setRepayForm({...iRepay,debtId:d.id,accountId:d.receivedInAccount||accs[0]?.id||""});setModal("repay");};
+
   const doRepay=()=>{
     if(!repayForm.amount||!repayForm.accountId||!repayForm.debtId)return;
     const debt=debts.find(x=>x.id===repayForm.debtId);if(!debt)return;
-    const amount=parseFloat(repayForm.amount)||0;
-    const newPaid=Math.min((debt.paidBack||0)+amount,debt.totalAmount);
+    const remaining=debt.totalAmount-debt.paidBack;
+    const requested=parseFloat(repayForm.amount)||0;
+    // FIX: cap at remaining, warn if over
+    const amount=Math.min(requested,remaining);
+    if(amount<=0)return;
+    const newPaid=(debt.paidBack||0)+amount;
     const nowSettled=newPaid>=debt.totalAmount;
     const tx={id:uid(),type:"expense",amount,merchant:`Repayment → ${debt.personName}`,category:"other",accountId:repayForm.accountId,notes:repayForm.notes||"Debt repayment",date:repayForm.date,isSplit:false,splitPeople:1,splitSettled:false};
     st(prev=>[tx,...prev]);
     sd(prev=>prev.map(d=>d.id===repayForm.debtId?{...d,paidBack:newPaid,settled:nowSettled}:d));
     if(nowSettled){fireConfetti();showToast(`${debt.personName} fully paid! 🎉`);}
+    else if(requested>remaining)showToast(`Capped at ${fmt(amount)} · debt cleared`);
     else showToast(`Logged · ${fmt(debt.totalAmount-newPaid)} left`);
     closeM();
   };
 
-  // BUG FIX 1: settleSplit/settleAll no longer mark splits settled prematurely
   const settleSplit=t=>{
-    const full=parseFloat(t.amount)||0,share=full/t.splitPeople;
+    const full=parseFloat(t.amount)||0,share=full/Math.max(t.splitPeople||1,1);
     setTxForm({...iTx,type:"income",amount:String((full-share).toFixed(2)),merchant:"WG Settlement",category:"other",accountId:t.accountId,notes:`Settlement for ${t.merchant}`,date:tod(),_settleIds:[t.id]});
     setModal("tx");
   };
@@ -627,7 +651,7 @@ function App(){
     setModal("tx");
   };
 
-  // BUG FIX 3: functional updaters so recurring trigger always reads fresh state
+  // FIX: recurring trigger uses functional updaters — no stale closures
   useEffect(()=>{
     if(!ready)return;
     const trigger=()=>{
@@ -653,7 +677,7 @@ function App(){
   },[ready]);
 
   const doExport=()=>{
-    const data={accs,cats,txs,goals,recurring,debts,exportedAt:new Date().toISOString(),version:"2.1"};
+    const data={accs,cats,txs,goals,recurring,debts,exportedAt:new Date().toISOString(),version:"2.3"};
     const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
     const url=URL.createObjectURL(blob);
     const a=document.createElement("a");a.href=url;a.download=`moneytrack-backup-${tod()}.json`;a.click();URL.revokeObjectURL(url);
@@ -665,12 +689,8 @@ function App(){
     reader.onload=ev=>{
       try{
         const data=JSON.parse(ev.target.result);
-        if(data.accs)sa(data.accs);
-        if(data.cats)sc(data.cats);
-        if(data.txs)st(data.txs);
-        if(data.goals)sg(data.goals);
-        if(data.recurring)sr(data.recurring);
-        if(data.debts)sd(data.debts);
+        if(data.accs)sa(data.accs);if(data.cats)sc(data.cats);if(data.txs)st(data.txs);
+        if(data.goals)sg(data.goals);if(data.recurring)sr(data.recurring);if(data.debts)sd(data.debts);
         showToast("Data restored!");closeM();
       }catch{showToast("Invalid backup file",false);}
     };
@@ -686,7 +706,7 @@ function App(){
   const setBudget=(catId,val)=>{const next={...budgets},n=parseFloat(val);if(!val||isNaN(n)||n<=0)delete next[catId];else next[catId]=n;sb(next);};
   const lockNow=()=>{if(pin){haptic(12);setLocked(true);}};
 
-  const net=mSt.inc-mSt.spt,netPos=net>=0,mxCat=catD[0]?.total||1;
+  const net=mSt.inc-mSt.spt,netPos=net>=0;
   const inp={display:"block",width:"100%",background:T.inp,color:T.txt,border:`1.5px solid ${T.inpB}`,borderRadius:12,padding:"13px 14px",fontSize:16,outline:"none",WebkitAppearance:"none",appearance:"none"};
   const GOAL_ICONS=["🎯","✈️","🏠","🎓","🚗","💻","🎮","💍","🏖️","🎁","💊","🐾"];
 
@@ -708,18 +728,17 @@ function App(){
   const SubNav=({view,setView,items})=>(
     <div style={{display:"flex",background:T.card,borderRadius:13,padding:4,marginBottom:14,gap:4}}>
       {items.map(([v,l])=>(
-        <button key={v} onClick={()=>{haptic(8);setView(v);}}
-          style={{flex:1,padding:"9px 0",borderRadius:10,border:"none",background:view===v?T.acc:"transparent",color:view===v?"#fff":T.txt2,fontWeight:600,fontSize:14,cursor:"pointer",transition:"all .2s"}}>
-          {l}
-        </button>
+        <button key={v} onClick={()=>{haptic(8);setView(v);}} style={{flex:1,padding:"9px 0",borderRadius:10,border:"none",background:view===v?T.acc:"transparent",color:view===v?"#fff":T.txt2,fontWeight:600,fontSize:14,cursor:"pointer",transition:"all .2s"}}>{l}</button>
       ))}
     </div>
   );
 
+  const fabLeft=fabDrag?(fabDrag.x<window.innerWidth/2?20:window.innerWidth-82):(fabSide==="left"?20:window.innerWidth-82);
+  const fabTopVal=fabDrag?Math.max(FAB_YMIN,Math.min(FAB_YMAX(),fabDrag.y-31)):(fabTop!=null?Math.max(FAB_YMIN,Math.min(FAB_YMAX(),fabTop)):window.innerHeight-160);
+
   return(
     <div style={{display:"flex",flexDirection:"column",height:"100dvh",background:T.bg,color:T.txt}}>
       <Confetti show={confetti}/>
-
       {(locked||pinFlow)&&(
         <PinLock T={T} mode={pinFlow==="set"?"set":"enter"} storedPin={pin}
           onDone={code=>{
@@ -756,7 +775,6 @@ function App(){
         </div>
       </div>
 
-      {/* Main scroll area */}
       <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
         <div style={{padding:"14px 16px 0"}}>
 
@@ -782,9 +800,9 @@ function App(){
             </div>
           </div>
 
-          {/* Debt banner */}
-          {activeDebts.length>0&&(
-            <div onClick={()=>{setTab("splits");setPeopleView("debts");}} className="mt-press" style={{background:dark?"#2d0000":"#ffdede",border:`1px solid ${dark?"#5c1a1a":"#fca5a5"}`,borderRadius:16,padding:"12px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
+          {/* Debt banner — persisted dismiss */}
+          {activeDebts.length>0&&!debtBannerSeen&&(
+            <div onClick={()=>{setDebtBannerSeen(true);LS.s("mt-debt-banner",true);setTab("splits");setPeopleView("debts");}} className="mt-press" style={{background:dark?"#2d0000":"#ffdede",border:`1px solid ${dark?"#5c1a1a":"#fca5a5"}`,borderRadius:16,padding:"12px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
               <span style={{fontSize:20}}>💸</span>
               <div style={{flex:1}}>
                 <div style={{fontWeight:600,fontSize:14,color:dark?"#ff6b6b":"#b91c1c"}}>You owe {fmt(totalDebt)}</div>
@@ -794,19 +812,19 @@ function App(){
             </div>
           )}
 
-          {/* Recurring due banner */}
-          {recurringDue.length>0&&(
+          {/* Recurring due banner — persisted dismiss */}
+          {recurringDue.length>0&&!recurringBannerSeen&&(
             <div style={{background:dark?"#1a1000":"#fff8e6",border:`1px solid ${dark?"#5a3a00":"#fde68a"}`,borderRadius:16,padding:"12px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
               {I.bell(dark?"#fbbf24":"#d97706")}
               <div style={{flex:1}}>
                 <div style={{fontWeight:600,fontSize:14,color:dark?"#fbbf24":"#92400e"}}>Recurring due soon</div>
                 <div style={{fontSize:12,color:dark?"#d97706":"#a16207",marginTop:1}}>{recurringDue.map(r=>r.merchant).join(", ")}</div>
               </div>
-              <button onClick={()=>{setTab("splits");setPeopleView("recurring");}} style={{background:"none",border:"none",color:dark?"#fbbf24":"#d97706",fontSize:12,fontWeight:600,cursor:"pointer",padding:0}}>View</button>
+              <button onClick={e=>{e.stopPropagation();setRecurringBannerSeen(true);LS.s("mt-rec-banner",true);setTab("splits");setPeopleView("recurring");}} style={{background:"none",border:"none",color:dark?"#fbbf24":"#d97706",fontSize:12,fontWeight:600,cursor:"pointer",padding:0}}>View</button>
             </div>
           )}
 
-          {/* WG splits banner — BUG FIX 4: persisted */}
+          {/* Splits banner — persisted dismiss */}
           {pendingSplits.length>0&&!splitBannerSeen&&(
             <div style={{background:dark?"#002e14":"#d4f5df",border:`1px solid ${dark?"#1a5c2a":"#86efac"}`,borderRadius:16,padding:"12px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
               {I.people(dark?"#30d158":"#16a34a")}
@@ -881,7 +899,7 @@ function App(){
             {recTxs.length===0?<div style={{padding:"4px 16px 16px",color:T.txt3,fontSize:14}}>No transactions yet</div>
             :recTxs.map((t,i)=>{
               const c=getCat(t.category),a=accs.find(x=>x.id===t.accountId);
-              const disp=t.isSplit&&t.type==="expense"?parseFloat(t.amount)/t.splitPeople:parseFloat(t.amount);
+              const disp=personalAmt(t);
               return(
                 <div key={t.id} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 16px",borderTop:i>0?`1px solid ${T.border}`:"none"}}>
                   <div style={{width:42,height:42,borderRadius:13,background:c.color+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{c.icon}</div>
@@ -960,14 +978,15 @@ function App(){
           {search&&filtTxs.length>0&&(
             <div style={{background:dark?"#001533":"#deeaff",borderRadius:13,padding:"10px 14px",marginBottom:10,display:"flex",justifyContent:"space-between",fontSize:14}}>
               <span style={{fontWeight:600,color:T.acc}}>"{search}"</span>
-              <span style={{color:T.txt2}}>{filtTxs.length} txs · <strong style={{color:T.acc}}>{fmt(filtTxs.filter(t=>t.type==="expense").reduce((s,t)=>s+(t.isSplit?parseFloat(t.amount)/t.splitPeople:parseFloat(t.amount)),0))}</strong></span>
+              {/* FIX: use personalAmt for search total */}
+              <span style={{color:T.txt2}}>{filtTxs.length} txs · <strong style={{color:T.acc}}>{fmt(filtTxs.filter(t=>t.type==="expense").reduce((s,t)=>s+personalAmt(t),0))}</strong></span>
             </div>
           )}
           <div style={{background:T.card,borderRadius:18,overflow:"hidden",marginBottom:90}}>
             {filtTxs.length===0?<div style={{padding:24,color:T.txt3,textAlign:"center",fontSize:14}}>No transactions found</div>
             :filtTxs.map((t,i)=>{
               const c=getCat(t.category),a=accs.find(x=>x.id===t.accountId);
-              const disp=t.isSplit&&t.type==="expense"?parseFloat(t.amount)/t.splitPeople:parseFloat(t.amount);
+              const disp=personalAmt(t);
               return(
                 <div key={t.id} style={{display:"flex",alignItems:"center",gap:12,padding:"13px 16px",borderTop:i>0?`1px solid ${T.border}`:"none"}}>
                   <div style={{width:44,height:44,borderRadius:13,background:c.color+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{c.icon}</div>
@@ -986,7 +1005,6 @@ function App(){
                     {t.isSplit&&<div style={{fontSize:10,color:T.txt3}}>full {fmt(t.amount)}</div>}
                     <div style={{display:"flex",gap:10}}>
                       <button onClick={()=>doEditTx(t)} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2}}>{I.edit(T.acc)}</button>
-                      {/* BUG FIX 2: doDeleteTx has undo */}
                       <button onClick={()=>doDeleteTx(t.id)} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2}}>{I.trash(T.red)}</button>
                     </div>
                   </div>
@@ -996,17 +1014,14 @@ function App(){
           </div>
         </>}
 
-        {/* ══ PEOPLE (Splits / Debts / Recurring) ══ */}
+        {/* ══ PEOPLE ══ */}
         {tab==="splits"&&<>
           <div style={{marginBottom:12}}>
             <div style={{fontWeight:700,fontSize:20}}>People & Money</div>
-            <div style={{fontSize:13,color:T.txt2,marginTop:1}}>
-              {totalDebt>0&&`You owe ${fmt(totalDebt)} · `}Others owe you {fmt(totalOwed)}
-            </div>
+            <div style={{fontSize:13,color:T.txt2,marginTop:1}}>{totalDebt>0&&`You owe ${fmt(totalDebt)} · `}Others owe you {fmt(totalOwed)}</div>
           </div>
           <SubNav view={peopleView} setView={setPeopleView} items={[["splits","Splits"],["debts","Debts"],["recurring","Recurring"]]}/>
 
-          {/* Splits */}
           {peopleView==="splits"&&<>
             {pendingSplits.length>0&&(
               <div style={{background:dark?"#002e14":"#d4f5df",borderRadius:16,padding:"14px 16px",marginBottom:14}}>
@@ -1019,19 +1034,13 @@ function App(){
               ?<div style={{background:T.card,borderRadius:16,padding:"24px",textAlign:"center",color:T.txt3,fontSize:14,marginBottom:90}}>No pending splits 🎉</div>
               :<div style={{background:T.card,borderRadius:18,overflow:"hidden",marginBottom:90}}>
                 {pendingSplits.map((t,i)=>{
-                  const c=getCat(t.category),full=parseFloat(t.amount)||0,share=full/t.splitPeople,owed=full-share;
+                  const c=getCat(t.category),full=parseFloat(t.amount)||0,share=full/Math.max(t.splitPeople||1,1),owed=full-share;
                   return(
                     <div key={t.id} style={{padding:"13px 16px",borderTop:i>0?`1px solid ${T.border}`:"none"}}>
                       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
                         <div style={{width:42,height:42,borderRadius:13,background:c.color+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{c.icon}</div>
-                        <div style={{flex:1}}>
-                          <div style={{fontWeight:600,fontSize:15}}>{t.merchant}</div>
-                          <div style={{fontSize:12,color:T.txt2}}>{t.date} · {t.splitPeople} people</div>
-                        </div>
-                        <div style={{textAlign:"right"}}>
-                          <div style={{fontWeight:700,color:T.green,fontSize:15}}>+{fmt(owed)}</div>
-                          <div style={{fontSize:11,color:T.txt3}}>owed to you</div>
-                        </div>
+                        <div style={{flex:1}}><div style={{fontWeight:600,fontSize:15}}>{t.merchant}</div><div style={{fontSize:12,color:T.txt2}}>{t.date} · {t.splitPeople} people</div></div>
+                        <div style={{textAlign:"right"}}><div style={{fontWeight:700,color:T.green,fontSize:15}}>+{fmt(owed)}</div><div style={{fontSize:11,color:T.txt3}}>owed to you</div></div>
                       </div>
                       <div style={{display:"flex",gap:8,marginBottom:8}}>
                         {[["Full",fmt(full),T.red],["Your share",fmt(share),T.txt],["Others pay",fmt(owed),T.green]].map(([l,v,co])=>(
@@ -1049,7 +1058,6 @@ function App(){
             }
           </>}
 
-          {/* Debts */}
           {peopleView==="debts"&&<>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
               <div style={{fontSize:14,color:T.txt2}}>{activeDebts.length>0?`Total owed: ${fmt(totalDebt)}`:"No active debts"}</div>
@@ -1066,6 +1074,7 @@ function App(){
               :<div style={{display:"flex",flexDirection:"column",gap:12,marginBottom:14}}>
                 {activeDebts.map(d=>{
                   const pct=Math.min(d.paidBack/d.totalAmount*100,100),remaining=d.totalAmount-d.paidBack;
+                  const accName=accs.find(a=>a.id===d.receivedInAccount)?.name;
                   return(
                     <div key={d.id} style={{background:T.card,borderRadius:18,padding:"16px"}}>
                       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
@@ -1073,6 +1082,7 @@ function App(){
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{fontWeight:700,fontSize:17}}>{d.personName}</div>
                           <div style={{fontSize:12,color:T.txt2}}>Borrowed {fmt(d.totalAmount)} · {d.date}</div>
+                          {accName&&<div style={{fontSize:12,color:T.txt3}}>→ {accName}</div>}
                           {d.description&&<div style={{fontSize:12,color:T.txt3}}>{d.description}</div>}
                         </div>
                         <div style={{textAlign:"right",flexShrink:0}}>
@@ -1109,7 +1119,6 @@ function App(){
             {settledDebts.length===0&&activeDebts.length===0&&<div style={{height:60}}/>}
           </>}
 
-          {/* Recurring */}
           {peopleView==="recurring"&&<>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
               <div style={{fontSize:14,color:T.txt2}}>{recurring.length} recurring transactions</div>
@@ -1134,7 +1143,7 @@ function App(){
                             <span style={{fontWeight:600,fontSize:15}}>{r.merchant}</span>
                             {isDue&&<span style={{fontSize:10,fontWeight:600,background:dark?"#1a1000":"#fef3c7",color:dark?"#fbbf24":"#92400e",borderRadius:6,padding:"1px 5px"}}>due soon</span>}
                           </div>
-                          <div style={{fontSize:12,color:T.txt2}}>Day {r.dayOfMonth} · {r.type} · {c.label}</div>
+                          <div style={{fontSize:12,color:T.txt2}}>Day {r.dayOfMonth} · {r.type} · {getCat(r.category).label}</div>
                         </div>
                         <div style={{textAlign:"right",flexShrink:0}}>
                           <div style={{fontWeight:700,fontSize:15,color:r.type==="income"?T.green:T.red}}>{r.type==="income"?"+":"−"}{fmt(r.amount)}</div>
@@ -1157,9 +1166,7 @@ function App(){
         {tab==="goals"&&<>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
             <div style={{fontWeight:700,fontSize:20}}>Savings Goals</div>
-            <button onClick={()=>{setGoalForm(iGoal);setEditId(null);setModal("goal");}} style={{display:"flex",alignItems:"center",gap:6,background:T.acc,color:"#fff",border:"none",borderRadius:13,padding:"10px 16px",fontWeight:600,fontSize:15,cursor:"pointer"}}>
-              {I.plus("#fff",18)} Add
-            </button>
+            <button onClick={()=>{setGoalForm(iGoal);setEditId(null);setModal("goal");}} style={{display:"flex",alignItems:"center",gap:6,background:T.acc,color:"#fff",border:"none",borderRadius:13,padding:"10px 16px",fontWeight:600,fontSize:15,cursor:"pointer"}}>{I.plus("#fff",18)} Add</button>
           </div>
           {goals.length===0
             ?<div style={{background:T.card,borderRadius:18,padding:"32px 20px",textAlign:"center",marginBottom:90}}>
@@ -1179,10 +1186,7 @@ function App(){
                         <div style={{fontWeight:700,fontSize:17}}>{g.name}</div>
                         <div style={{fontSize:13,color:T.txt2,marginTop:2}}>{done?"Goal reached!":fmt(g.targetAmount-g.savedAmount)+" to go"}</div>
                       </div>
-                      <div style={{textAlign:"right"}}>
-                        <div style={{fontWeight:700,fontSize:18,color:g.color||T.acc}}>{fmt(g.savedAmount)}</div>
-                        <div style={{fontSize:12,color:T.txt3}}>of {fmt(g.targetAmount)}</div>
-                      </div>
+                      <div style={{textAlign:"right"}}><div style={{fontWeight:700,fontSize:18,color:g.color||T.acc}}>{fmt(g.savedAmount)}</div><div style={{fontSize:12,color:T.txt3}}>of {fmt(g.targetAmount)}</div></div>
                     </div>
                     <div style={{height:8,background:T.border,borderRadius:99,marginBottom:8,overflow:"hidden"}}><div style={{height:"100%",borderRadius:99,background:g.color||T.acc,width:`${pct}%`,transition:"width .5s"}}/></div>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -1199,7 +1203,7 @@ function App(){
           }
         </>}
 
-        {/* ══ ACCOUNTS (hidden tab, accessed via settings) ══ */}
+        {/* ══ ACCOUNTS (hidden) ══ */}
         {tab==="accs"&&<>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
             <div><div style={{fontWeight:700,fontSize:20}}>Accounts</div><div style={{fontSize:13,color:T.txt2,marginTop:1}}>Net: {fmt(totBal)}</div></div>
@@ -1228,7 +1232,7 @@ function App(){
           </div>
         </>}
 
-        {/* ══ CATEGORIES (hidden tab) ══ */}
+        {/* ══ CATEGORIES (hidden) ══ */}
         {tab==="categories"&&<>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
             <div><div style={{fontWeight:700,fontSize:20}}>Categories</div><div style={{fontSize:13,color:T.txt2,marginTop:1}}>{cats.length} categories</div></div>
@@ -1375,20 +1379,13 @@ function App(){
 
       {/* FAB */}
       <button onPointerDown={onFabDown} className="mt-press"
-        style={{position:"fixed",
-          left:fabDrag?Math.max(8,Math.min(window.innerWidth-70,fabDrag.x-31)):(fabSide==="left"?20:window.innerWidth-82),
-          top:Math.max(8,Math.min(window.innerHeight-70,fabDrag?fabDrag.y-31:(fabTop!=null?fabTop:window.innerHeight-158))),
-          width:62,height:62,borderRadius:31,
-          background:`linear-gradient(135deg,${T.acc},${dark?"#0a3a9c":"#0051d5"})`,
-          border:"none",boxShadow:`0 8px 26px ${T.acc}66`,cursor:fabDrag?"grabbing":"pointer",
-          display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,
-          touchAction:"none",userSelect:"none",transition:fabDrag?"none":"left .28s cubic-bezier(.22,1,.36,1)"}}>
+        style={{position:"fixed",left:fabLeft,top:fabTopVal,width:62,height:62,borderRadius:31,background:`linear-gradient(135deg,${T.acc},${dark?"#0a3a9c":"#0051d5"})`,border:"none",boxShadow:`0 8px 26px ${T.acc}66`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,touchAction:"none",userSelect:"none",transition:fabDrag?"none":"top .28s cubic-bezier(.22,1,.36,1),left .28s cubic-bezier(.22,1,.36,1)"}}>
         {I.plus("#fff",30)}
       </button>
 
       {/* Tab bar */}
       <div style={{position:"fixed",left:0,right:0,bottom:0,zIndex:90,paddingBottom:"calc(env(safe-area-inset-bottom) + 10px)",pointerEvents:"none"}}>
-        <div style={{maxWidth:480,margin:"0 auto",padding:"0 14px"}}>
+        <div style={{maxWidth:"100%",margin:"0 auto",padding:"0 14px"}}>
           <div style={{pointerEvents:"auto",display:"flex",gap:2,background:dark?"rgba(28,28,30,.82)":"rgba(255,255,255,.84)",backdropFilter:"saturate(180%) blur(22px)",WebkitBackdropFilter:"saturate(180%) blur(22px)",borderRadius:26,padding:"7px 6px",boxShadow:dark?"0 8px 32px rgba(0,0,0,.55)":"0 8px 32px rgba(0,0,0,.16)",border:`1px solid ${dark?"rgba(255,255,255,.08)":"rgba(0,0,0,.05)"}`}}>
             {TABS.map(({id,lbl,ic})=>{
               const act=tab===id,col=act?T.acc:T.txt3;
@@ -1450,9 +1447,10 @@ function App(){
           </div>
         )}
         <div style={{marginBottom:20}}><Label text="Notes (optional)"/><input type="text" placeholder="Any notes…" value={txForm.notes} onChange={e=>setTxForm(f=>({...f,notes:e.target.value}))} style={inp}/></div>
-        <button onClick={doAddTx} disabled={!txForm.amount||!txForm.accountId} style={{display:"block",width:"100%",background:!txForm.amount||!txForm.accountId?T.txt3:T.acc,color:"#fff",border:"none",borderRadius:15,padding:17,fontWeight:700,fontSize:17,cursor:!txForm.amount||!txForm.accountId?"not-allowed":"pointer",marginBottom:4}}>
-          {editId?"Save Changes":"Add Transaction"}
-        </button>
+        {(()=>{
+          const dis=!txForm.amount||!txForm.accountId||(txForm.type==="transfer"&&!txForm.toAccountId);
+          return <button onClick={doAddTx} disabled={dis} style={{display:"block",width:"100%",background:dis?T.txt3:T.acc,color:"#fff",border:"none",borderRadius:15,padding:17,fontWeight:700,fontSize:17,cursor:dis?"not-allowed":"pointer",marginBottom:4}}>{editId?"Save Changes":"Add Transaction"}</button>;
+        })()}
       </Sheet>
 
       {/* ── DEBT SHEET ── */}
@@ -1460,9 +1458,37 @@ function App(){
         <div style={{marginBottom:14}}><Label text="Person's Name"/><input type="text" placeholder="e.g. Sara, Raj, Max…" value={debtForm.personName} onChange={e=>setDebtForm(f=>({...f,personName:e.target.value}))} style={inp}/></div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
           <div><Label text="Borrowed (€)"/><input type="number" step="0.01" min="0" placeholder="0.00" value={debtForm.totalAmount} onChange={e=>setDebtForm(f=>({...f,totalAmount:e.target.value}))} style={inp}/></div>
-          <div><Label text="Already paid back (€)"/><input type="number" step="0.01" min="0" placeholder="0" value={debtForm.paidBack} onChange={e=>setDebtForm(f=>({...f,paidBack:e.target.value}))} style={inp}/></div>
+          <div>
+            <Label text="Already paid back (€)"/>
+            {/* FIX: cap paidBack at totalAmount in input */}
+            <input type="number" step="0.01" min="0"
+              max={debtForm.totalAmount||undefined}
+              placeholder="0"
+              value={debtForm.paidBack}
+              onChange={e=>{
+                const total=parseFloat(debtForm.totalAmount)||0;
+                const val=parseFloat(e.target.value)||0;
+                setDebtForm(f=>({...f,paidBack:String(total>0?Math.min(val,total):val)}));
+              }}
+              style={inp}/>
+          </div>
         </div>
         <div style={{marginBottom:14}}><Label text="Date Borrowed"/><input type="date" value={debtForm.date} onChange={e=>setDebtForm(f=>({...f,date:e.target.value}))} style={{...inp,colorScheme:dark?"dark":"light"}}/></div>
+        {!editId&&(
+          <div style={{marginBottom:14}}>
+            <Label text="Money received into account"/>
+            <select value={debtForm.receivedInAccount} onChange={e=>setDebtForm(f=>({...f,receivedInAccount:e.target.value}))} style={inp}>
+              <option value="">Don't log (I'll do it manually)</option>
+              {accs.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
+            </select>
+            {debtForm.receivedInAccount&&(
+              <div style={{marginTop:8,background:dark?"#002e14":"#d4f5df",borderRadius:10,padding:"9px 12px",fontSize:13,color:dark?"#4ade80":"#16a34a",fontWeight:500}}>
+                ✓ Will add +{debtForm.totalAmount?fmt(parseFloat(debtForm.totalAmount)):"€0.00"} income to {accs.find(a=>a.id===debtForm.receivedInAccount)?.name} on {debtForm.date}
+                {parseFloat(debtForm.paidBack)>0&&<div style={{marginTop:4}}>And −{fmt(Math.min(parseFloat(debtForm.paidBack),parseFloat(debtForm.totalAmount)||0))} for prior repayment</div>}
+              </div>
+            )}
+          </div>
+        )}
         <div style={{marginBottom:14}}><Label text="Description (optional)"/><input type="text" placeholder="e.g. for groceries, emergency…" value={debtForm.description} onChange={e=>setDebtForm(f=>({...f,description:e.target.value}))} style={inp}/></div>
         <div style={{marginBottom:22}}><Label text="Color"/><input type="color" value={debtForm.color} onChange={e=>setDebtForm(f=>({...f,color:e.target.value}))} style={{width:"100%",height:52,border:`1.5px solid ${T.inpB}`,borderRadius:13,background:T.inp,cursor:"pointer",padding:4,display:"block"}}/></div>
         <button onClick={doAddDebt} disabled={!debtForm.personName||!debtForm.totalAmount} style={{display:"block",width:"100%",background:!debtForm.personName||!debtForm.totalAmount?T.txt3:T.acc,color:"#fff",border:"none",borderRadius:15,padding:17,fontWeight:700,fontSize:17,cursor:!debtForm.personName||!debtForm.totalAmount?"not-allowed":"pointer",marginBottom:4}}>
@@ -1480,10 +1506,7 @@ function App(){
           return(<>
             <div style={{background:T.bg,borderRadius:14,padding:"12px 14px",marginBottom:16,display:"flex",alignItems:"center",gap:12}}>
               <div style={{width:48,height:48,borderRadius:14,background:debt.color,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:22,flexShrink:0}}>{debt.personName[0]?.toUpperCase()}</div>
-              <div>
-                <div style={{fontWeight:700,fontSize:16,color:T.txt}}>{debt.personName}</div>
-                <div style={{fontSize:13,color:T.red,fontWeight:600}}>{fmt(remaining)} remaining</div>
-              </div>
+              <div><div style={{fontWeight:700,fontSize:16,color:T.txt}}>{debt.personName}</div><div style={{fontSize:13,color:T.red,fontWeight:600}}>{fmt(remaining)} remaining</div></div>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
               <div><Label text="Amount (€)"/><input type="number" step="0.01" min="0" placeholder="0.00" value={repayForm.amount} onChange={e=>setRepayForm(f=>({...f,amount:e.target.value}))} style={inp}/></div>
@@ -1496,9 +1519,7 @@ function App(){
             </div>
             <div style={{marginBottom:14}}><Label text="From Account"/><select value={repayForm.accountId} onChange={e=>setRepayForm(f=>({...f,accountId:e.target.value}))} style={inp}><option value="">Select…</option>{accs.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></div>
             <div style={{marginBottom:20}}><Label text="Notes (optional)"/><input type="text" placeholder="Any notes…" value={repayForm.notes} onChange={e=>setRepayForm(f=>({...f,notes:e.target.value}))} style={inp}/></div>
-            <button onClick={doRepay} disabled={!repayForm.amount||!repayForm.accountId} style={{display:"block",width:"100%",background:!repayForm.amount||!repayForm.accountId?T.txt3:T.acc,color:"#fff",border:"none",borderRadius:15,padding:17,fontWeight:700,fontSize:17,cursor:!repayForm.amount||!repayForm.accountId?"not-allowed":"pointer",marginBottom:4}}>
-              Log Repayment
-            </button>
+            <button onClick={doRepay} disabled={!repayForm.amount||!repayForm.accountId} style={{display:"block",width:"100%",background:!repayForm.amount||!repayForm.accountId?T.txt3:T.acc,color:"#fff",border:"none",borderRadius:15,padding:17,fontWeight:700,fontSize:17,cursor:!repayForm.amount||!repayForm.accountId?"not-allowed":"pointer",marginBottom:4}}>Log Repayment</button>
           </>);
         })()}
       </Sheet>
@@ -1557,7 +1578,7 @@ function App(){
             {notifs.map(n=>{
               const cc=({blue:T.acc,red:T.red,green:T.green})[n.tone]||T.acc;
               return(
-                <button key={n.k} onClick={()=>{sdn([...dismissedNotifs,n.k]);setTab(n.tab);if(n.ana)setAnaView(n.ana);if(n.pv)setPeopleView(n.pv);closeM();}} className="mt-press"
+                <button key={n.k} onClick={()=>{sdn(prev=>[...prev,n.k]);setTab(n.tab);if(n.ana)setAnaView(n.ana);if(n.pv)setPeopleView(n.pv);closeM();}} className="mt-press"
                   style={{display:"flex",alignItems:"center",gap:12,background:T.bg,border:`1px solid ${T.border}`,borderRadius:14,padding:"13px 14px",cursor:"pointer",textAlign:"left",width:"100%"}}>
                   <div style={{width:38,height:38,borderRadius:11,background:cc+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{n.icon}</div>
                   <div style={{flex:1,minWidth:0}}>
@@ -1628,7 +1649,7 @@ function App(){
         <div style={{padding:"12px 16px",background:dark?"#2d0000":"#ffdede",borderRadius:14}}>
           <div style={{fontWeight:600,fontSize:14,color:dark?"#ff453a":"#c0392b",marginBottom:4}}>⚠️ Danger zone</div>
           <div style={{fontSize:12,color:dark?"#ff6b6b":"#7f1d1d",marginBottom:10}}>Permanently deletes all your data.</div>
-          <button onClick={()=>{if(confirm("Delete ALL data? This cannot be undone.")){sa(DEFACCS);st([]);sg([]);sr([]);sd([]);closeM();showToast("All data cleared",false);}}} style={{background:dark?"#ff453a":"#c0392b",color:"#fff",border:"none",borderRadius:11,padding:"10px 16px",fontWeight:600,fontSize:14,cursor:"pointer"}}>Clear all data</button>
+          <button onClick={()=>{if(confirm("Delete ALL data?")){sa(DEFACCS);st([]);sg([]);sr([]);sd([]);closeM();showToast("All data cleared",false);}}} style={{background:dark?"#ff453a":"#c0392b",color:"#fff",border:"none",borderRadius:11,padding:"10px 16px",fontWeight:600,fontSize:14,cursor:"pointer"}}>Clear all data</button>
         </div>
         <div style={{height:16}}/>
       </Sheet>
