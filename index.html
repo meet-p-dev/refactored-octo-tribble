@@ -33,11 +33,25 @@ select{-webkit-appearance:none}
 .mt-press:active{transform:scale(.94)}
 .mt-hscroll{display:flex;gap:11px;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 16px;margin:0 -16px}
 .mt-hscroll>*{scroll-snap-align:start;flex-shrink:0}
+.mt-label{font-size:11px;font-weight:600;letter-spacing:1.1px;text-transform:uppercase;margin:18px 2px 8px;display:block}
+.mt-stagger>*{animation:mtRise .4s cubic-bezier(.22,1,.36,1) both}
+.mt-stagger>*:nth-child(1){animation-delay:0ms}
+.mt-stagger>*:nth-child(2){animation-delay:35ms}
+.mt-stagger>*:nth-child(3){animation-delay:70ms}
+.mt-stagger>*:nth-child(4){animation-delay:105ms}
+.mt-stagger>*:nth-child(5){animation-delay:140ms}
+.mt-stagger>*:nth-child(6){animation-delay:175ms}
+.mt-stagger>*:nth-child(n+7){animation-delay:210ms}
+.mt-tap{cursor:pointer;transition:transform .12s ease,opacity .12s ease}
+.mt-tap:active{transform:scale(.97);opacity:.85}
+.mt-scaleback{transition:transform .3s cubic-bezier(.32,.72,0,1),border-radius .3s,filter .3s}
+.mt-scaleback.dimmed{transform:scale(.96) translateY(6px);border-radius:22px;filter:brightness(.75);overflow:hidden}
+@supports(padding:max(0px)){.mt-safe-b{padding-bottom:max(10px,env(safe-area-inset-bottom))}}
 </style>
 </head>
 <body>
 <div id="root"><div style="font-family:-apple-system,sans-serif;padding:40px 24px;text-align:center;color:#8e8e93;font-size:15px;line-height:1.6">This dev version needs the local server.<br>Run <b>python3 -m http.server 8123</b> here and open <b>http://127.0.0.1:8123/</b><br><br>To use the app directly, open <b>moneytrack.html</b> instead.</div></div>
-<script>window.MT_VERSION="V7.3";</script>
+<script>window.MT_VERSION="V8.0";</script>
 <script type="text/babel">
 const {useState,useEffect,useMemo,useRef}=React;
 
@@ -264,6 +278,7 @@ function App(){
   const [search,setSearch]       =useState("");
   const [fCat,setFCat]           =useState("");
   const [fAcc,setFAcc]           =useState("");
+  const [fType,setFType]         =useState("");
   const [drillCat,setDrillCat]   =useState(null);
   const [ready,setReady]         =useState(false);
   const [toast,setToast]         =useState(null);
@@ -432,8 +447,9 @@ function App(){
       if(search&&!t.merchant?.toLowerCase().includes(search.toLowerCase()))return false;
       if(fCat&&t.category!==fCat)return false;
       if(fAcc&&t.accountId!==fAcc)return false;
+      if(fType&&t.type!==fType)return false;
       return true;
-    }),[txs,search,fCat,fAcc]);
+    }),[txs,search,fCat,fAcc,fType]);
 
   const recTxs=useMemo(()=>[...txs].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8),[txs]);
   const pendingSplits=useMemo(()=>txs.filter(t=>t.isSplit&&!t.splitSettled&&t.type==="expense"),[txs]);
@@ -714,6 +730,7 @@ function App(){
   };
   const setBudget=(catId,val)=>{const next={...budgets},n=parseFloat(val);if(!val||isNaN(n)||n<=0)delete next[catId];else next[catId]=n;sb(next);};
   const lockNow=()=>{if(pin){haptic(12);setLocked(true);}};
+  const goTxs=(type="")=>{haptic(8);setFType(type);setSearch("");setFCat("");setFAcc("");setTab("txs");};
 
   const net=mSt.inc-mSt.spt,netPos=net>=0;
   const inp={display:"block",width:"100%",background:T.inp,color:T.txt,border:`1.5px solid ${T.inpB}`,borderRadius:12,padding:"13px 14px",fontSize:16,outline:"none",WebkitAppearance:"none",appearance:"none"};
@@ -735,9 +752,9 @@ function App(){
   ];
 
   const SubNav=({view,setView,items})=>(
-    <div style={{display:"flex",background:T.card,borderRadius:13,padding:4,marginBottom:14,gap:4}}>
+    <div style={{display:"flex",background:T.card,borderRadius:12,padding:4,marginBottom:14,gap:4}}>
       {items.map(([v,l])=>(
-        <button key={v} onClick={()=>{haptic(8);setView(v);}} style={{flex:1,padding:"9px 0",borderRadius:10,border:"none",background:view===v?T.acc:"transparent",color:view===v?"#fff":T.txt2,fontWeight:600,fontSize:14,cursor:"pointer",transition:"all .2s"}}>{l}</button>
+        <button key={v} onClick={()=>{haptic(8);setView(v);}} style={{flex:1,padding:"9px 0",borderRadius:12,border:"none",background:view===v?T.acc:"transparent",color:view===v?"#fff":T.txt2,fontWeight:600,fontSize:14,cursor:"pointer",transition:"all .2s"}}>{l}</button>
       ))}
     </div>
   );
@@ -759,60 +776,59 @@ function App(){
       )}
 
       {toast&&(
-        <div style={{position:"fixed",top:"calc(env(safe-area-inset-top) + 12px)",left:"50%",transform:"translateX(-50%)",zIndex:999,background:toast.ok?"#1c1c1e":"#ff453a",color:"#fff",borderRadius:14,padding:"10px 18px",fontSize:14,fontWeight:600,display:"flex",alignItems:"center",gap:8,boxShadow:"0 4px 20px rgba(0,0,0,.3)",whiteSpace:"nowrap"}}>
+        <div style={{position:"fixed",top:"calc(env(safe-area-inset-top) + 12px)",left:"50%",transform:"translateX(-50%)",zIndex:999,background:toast.ok?"#1c1c1e":"#ff453a",color:"#fff",borderRadius:12,padding:"10px 18px",fontSize:14,fontWeight:600,display:"flex",alignItems:"center",gap:8,boxShadow:"0 4px 20px rgba(0,0,0,.3)",whiteSpace:"nowrap"}}>
           {toast.ok?I.check("#fff"):I.x("#fff")} {toast.msg}
-          {toast.undo&&<button onClick={()=>{try{toast.undo();}catch{}setToast(null);}} style={{marginLeft:12,background:"transparent",border:"1px solid rgba(255,255,255,.2)",color:"#fff",padding:"6px 10px",borderRadius:10,cursor:"pointer",fontWeight:700}}>Undo</button>}
+          {toast.undo&&<button onClick={()=>{try{toast.undo();}catch{}setToast(null);}} style={{marginLeft:12,background:"transparent",border:"1px solid rgba(255,255,255,.2)",color:"#fff",padding:"6px 10px",borderRadius:12,cursor:"pointer",fontWeight:700}}>Undo</button>}
         </div>
       )}
 
       {/* Header */}
-      <div style={{background:T.card,flexShrink:0,paddingTop:"env(safe-area-inset-top)",boxShadow:dark?"0 .5px 0 rgba(255,255,255,.07)":"0 .5px 0 rgba(0,0,0,.1)"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 20px"}}>
-          <div style={{display:"flex",alignItems:"center",gap:9}}>
-            <span style={{fontSize:26}}>💰</span>
-            <span style={{fontWeight:700,fontSize:19,letterSpacing:-.4}}>MoneyTrack</span>
-          </div>
-          <div style={{display:"flex",gap:8}}>
-            {pin&&<button onClick={lockNow} className="mt-press" style={{background:T.bg,border:`1px solid ${T.border}`,borderRadius:10,padding:"7px 10px",cursor:"pointer",display:"flex",alignItems:"center"}}>{I.lock(T.acc,18)}</button>}
-            <button onClick={()=>setModal("notifs")} className="mt-press" style={{position:"relative",background:T.bg,border:`1px solid ${T.border}`,borderRadius:10,padding:"7px 10px",cursor:"pointer",display:"flex",alignItems:"center"}}>
+      <div style={{background:T.bg,flexShrink:0,paddingTop:"env(safe-area-inset-top)"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 20px 6px"}}>
+          <span style={{fontWeight:700,fontSize:17,letterSpacing:-.3}}>MoneyTrack</span>
+          <div style={{display:"flex",gap:18,alignItems:"center"}}>
+            {pin&&<button onClick={lockNow} className="mt-press" style={{background:"none",border:"none",padding:0,cursor:"pointer",display:"flex"}}>{I.lock(T.txt2,19)}</button>}
+            <button onClick={()=>setModal("notifs")} className="mt-press" style={{position:"relative",background:"none",border:"none",padding:0,cursor:"pointer",display:"flex"}}>
               {I.bell(T.txt2)}
-              {notifs.length>0&&<span style={{position:"absolute",top:3,right:4,minWidth:15,height:15,padding:"0 3px",borderRadius:99,background:T.red,color:"#fff",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",border:`1.5px solid ${T.bg}`}}>{notifs.length}</span>}
+              {notifs.length>0&&<span style={{position:"absolute",top:-4,right:-6,minWidth:15,height:15,padding:"0 3px",borderRadius:99,background:T.red,color:"#fff",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",border:`1.5px solid ${T.bg}`}}>{notifs.length}</span>}
             </button>
-            <button onClick={()=>setModal("settings")} className="mt-press" style={{background:T.bg,border:`1px solid ${T.border}`,borderRadius:10,padding:"7px 10px",cursor:"pointer",display:"flex",alignItems:"center"}}>{I.settings(T.txt2)}</button>
-            <button onClick={tgDk} className="mt-press" style={{background:T.bg,border:`1px solid ${T.border}`,borderRadius:10,padding:"7px 10px",cursor:"pointer",display:"flex",alignItems:"center"}}>{dark?I.sun(T.acc):I.moon(T.acc)}</button>
+            <button onClick={tgDk} className="mt-press" style={{background:"none",border:"none",padding:0,cursor:"pointer",display:"flex"}}>{dark?I.sun(T.txt2):I.moon(T.txt2)}</button>
+            <button onClick={()=>setModal("settings")} className="mt-press" style={{background:"none",border:"none",padding:0,cursor:"pointer",display:"flex"}}>{I.settings(T.txt2)}</button>
           </div>
         </div>
       </div>
 
-      <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
-        <div style={{padding:"14px 16px 0"}}>
+      <div className={"mt-scaleback"+(modal?" dimmed":"")} style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+        <div className="mt-stagger" style={{padding:"6px 16px 0"}}>
 
         {/* ══ HOME ══ */}
         {tab==="home"&&<>
-          <div onClick={()=>setTab("accs")} className="mt-rise mt-press" style={{position:"relative",background:`linear-gradient(135deg,${T.acc},${dark?"#0a3a9c":"#0051d5"})`,borderRadius:24,padding:"22px 20px 18px",marginBottom:14,color:"#fff",boxShadow:`0 10px 30px ${T.acc}55`,overflow:"hidden",cursor:"pointer"}}>
-            <div style={{position:"absolute",top:-44,right:-26,width:160,height:160,borderRadius:99,background:"rgba(255,255,255,.13)"}}/>
-            <div style={{position:"absolute",bottom:-66,left:-24,width:150,height:150,borderRadius:99,background:"rgba(255,255,255,.07)"}}/>
-            <div style={{position:"relative"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:3}}>
-                <div style={{fontSize:13,opacity:.85,fontWeight:500}}>Total Balance</div>
-                <div style={{fontSize:11,opacity:.85,fontWeight:600,background:"rgba(255,255,255,.18)",padding:"3px 9px",borderRadius:99}}>{accs.length} accounts ›</div>
+          <div style={{textAlign:"center",padding:"8px 0 16px"}}>
+            <div onClick={()=>{haptic(8);setTab("accs");}} className="mt-tap" style={{display:"inline-block"}}>
+              <div style={{fontSize:11,fontWeight:600,letterSpacing:1.1,color:T.txt3,textTransform:"uppercase"}}>Total Balance</div>
+              <AnimatedNumber value={totBal} format={fmt} style={{fontSize:38,fontWeight:700,letterSpacing:-1.2,display:"block",marginTop:2,fontVariantNumeric:"tabular-nums"}}/>
+              <div style={{fontSize:12,fontWeight:600,color:T.acc,marginTop:3}}>{accs.length} accounts ›</div>
+            </div>
+            <div style={{display:"flex",justifyContent:"center",gap:28,marginTop:14}}>
+              <div onClick={()=>goTxs("income")} className="mt-tap">
+                <div style={{fontSize:10,fontWeight:600,letterSpacing:.6,color:T.txt3}}>INCOME</div>
+                <div style={{fontSize:14,fontWeight:700,color:T.green,fontVariantNumeric:"tabular-nums",marginTop:1}}>+{fmt(mSt.inc)}</div>
               </div>
-              <AnimatedNumber value={totBal} format={fmt} style={{fontSize:40,fontWeight:700,letterSpacing:-.8,marginBottom:18,display:"block"}}/>
-              <div style={{display:"flex",background:"rgba(255,255,255,.15)",borderRadius:14,overflow:"hidden"}}>
-                {[["+"+fmt(mSt.inc),"Income"],["-"+fmt(mSt.spt),"My Spend"],[(netPos?"+":"")+fmt(net),"Net"]].map(([val,lbl],i)=>(
-                  <div key={lbl} style={{flex:1,padding:"10px 0",textAlign:"center",borderLeft:i>0?"1px solid rgba(255,255,255,.2)":"none"}}>
-                    <div style={{fontSize:14,fontWeight:600}}>{val}</div>
-                    <div style={{fontSize:11,opacity:.75,marginTop:1}}>{lbl} · {mLbl.slice(0,3)}</div>
-                  </div>
-                ))}
+              <div onClick={()=>goTxs("expense")} className="mt-tap">
+                <div style={{fontSize:10,fontWeight:600,letterSpacing:.6,color:T.txt3}}>SPENT</div>
+                <div style={{fontSize:14,fontWeight:700,color:T.txt,fontVariantNumeric:"tabular-nums",marginTop:1}}>−{fmt(mSt.spt)}</div>
+              </div>
+              <div onClick={()=>{haptic(8);setTab("stats");setAnaView("spend");}} className="mt-tap">
+                <div style={{fontSize:10,fontWeight:600,letterSpacing:.6,color:T.txt3}}>NET · {mLbl.slice(0,3).toUpperCase()}</div>
+                <div style={{fontSize:14,fontWeight:700,color:netPos?T.green:T.red,fontVariantNumeric:"tabular-nums",marginTop:1}}>{(netPos?"+":"")+fmt(net)}</div>
               </div>
             </div>
           </div>
 
           {/* Debt banner — persisted dismiss */}
           {activeDebts.length>0&&!debtBannerSeen&&(
-            <div onClick={()=>{setDebtBannerSeen(true);LS.s("mt-debt-banner",true);setTab("splits");setPeopleView("debts");}} className="mt-press" style={{background:dark?"#2d0000":"#ffdede",border:`1px solid ${dark?"#5c1a1a":"#fca5a5"}`,borderRadius:16,padding:"12px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
-              <span style={{fontSize:20}}>💸</span>
+            <div onClick={()=>{setDebtBannerSeen(true);LS.s("mt-debt-banner",true);setTab("splits");setPeopleView("debts");}} className="mt-press" style={{background:dark?"#2d0000":"#ffdede",border:`1px solid ${dark?"#5c1a1a":"#fca5a5"}`,borderRadius:20,padding:"12px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
+              {I.wallet(dark?"#ff6b6b":"#b91c1c",18)}
               <div style={{flex:1}}>
                 <div style={{fontWeight:600,fontSize:14,color:dark?"#ff6b6b":"#b91c1c"}}>You owe {fmt(totalDebt)}</div>
                 <div style={{fontSize:12,color:dark?"#ff8888":"#dc2626",marginTop:1}}>{activeDebts.length===1?`to ${activeDebts[0].personName}`:`to ${activeDebts.length} friends`} · tap to manage</div>
@@ -823,7 +839,7 @@ function App(){
 
           {/* Recurring due banner — persisted dismiss */}
           {recurringDue.length>0&&!recurringBannerSeen&&(
-            <div style={{background:dark?"#1a1000":"#fff8e6",border:`1px solid ${dark?"#5a3a00":"#fde68a"}`,borderRadius:16,padding:"12px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
+            <div style={{background:dark?"#1a1000":"#fff8e6",border:`1px solid ${dark?"#5a3a00":"#fde68a"}`,borderRadius:20,padding:"12px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
               {I.bell(dark?"#fbbf24":"#d97706")}
               <div style={{flex:1}}>
                 <div style={{fontWeight:600,fontSize:14,color:dark?"#fbbf24":"#92400e"}}>Recurring due soon</div>
@@ -835,7 +851,7 @@ function App(){
 
           {/* Splits banner — persisted dismiss */}
           {pendingSplits.length>0&&!splitBannerSeen&&(
-            <div style={{background:dark?"#002e14":"#d4f5df",border:`1px solid ${dark?"#1a5c2a":"#86efac"}`,borderRadius:16,padding:"12px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
+            <div style={{background:dark?"#002e14":"#d4f5df",border:`1px solid ${dark?"#1a5c2a":"#86efac"}`,borderRadius:20,padding:"12px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
               {I.people(dark?"#30d158":"#16a34a")}
               <div style={{flex:1}}>
                 <div style={{fontWeight:600,fontSize:14,color:dark?"#30d158":"#15803d"}}>Others owe you {fmt(totalOwed)}</div>
@@ -846,24 +862,25 @@ function App(){
           )}
 
           {/* Safe / Budget row */}
-          <div style={{display:"flex",gap:11,marginBottom:14}}>
-            <div className="mt-rise" style={{flex:1,background:T.card,borderRadius:18,padding:"15px"}}>
-              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:7}}>{I.flame(T.acc)}<span style={{fontSize:12,fontWeight:600,color:T.txt2}}>Safe / day</span></div>
-              <AnimatedNumber value={safeToday} format={fmt} style={{fontSize:22,fontWeight:700,letterSpacing:-.5,color:safeToday>0?T.txt:T.txt3}}/>
-              <div style={{fontSize:11,color:T.txt3,marginTop:4}}>{daysLeft} days left</div>
+          <div style={{display:"flex",background:T.card,borderRadius:20,marginBottom:12,overflow:"hidden"}}>
+            <div onClick={()=>{haptic(8);setTab("stats");setAnaView("budget");}} className="mt-tap" style={{flex:1,padding:"13px 15px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:5}}>{I.flame(T.acc,14)}<span style={{fontSize:11,fontWeight:600,color:T.txt2}}>Safe / day</span></div>
+              <AnimatedNumber value={safeToday} format={fmt} style={{fontSize:18,fontWeight:700,letterSpacing:-.4,color:safeToday>0?T.txt:T.txt3,fontVariantNumeric:"tabular-nums"}}/>
+              <span style={{fontSize:10,color:T.txt3}}> · {daysLeft} d left</span>
             </div>
-            <div onClick={()=>{setTab("stats");setAnaView("budget");}} className="mt-rise mt-press" style={{flex:1,background:T.card,borderRadius:18,padding:"15px",cursor:"pointer"}}>
-              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:7}}>{I.budget(T.acc,16)}<span style={{fontSize:12,fontWeight:600,color:T.txt2}}>Budget left</span></div>
+            <div style={{width:1,background:T.border,margin:"12px 0",flexShrink:0}}/>
+            <div onClick={()=>{haptic(8);setTab("stats");setAnaView("budget");}} className="mt-tap" style={{flex:1,padding:"13px 15px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:5}}>{I.budget(T.acc,14)}<span style={{fontSize:11,fontWeight:600,color:T.txt2}}>Budget left</span></div>
               {totalBudget>0?<>
-                <AnimatedNumber value={Math.max(totalBudget-totalBudgetSpent,0)} format={fmt} style={{fontSize:22,fontWeight:700,letterSpacing:-.5,color:totalBudgetSpent>totalBudget?T.red:T.txt}}/>
-                <div style={{height:5,background:T.border,borderRadius:99,marginTop:9,overflow:"hidden"}}><div style={{height:"100%",borderRadius:99,width:Math.min(totalBudgetSpent/totalBudget*100,100)+"%",background:totalBudgetSpent>totalBudget?T.red:T.green,transition:"width .6s"}}/></div>
-              </>:<><div style={{fontSize:15,fontWeight:700,color:T.acc}}>Set up →</div><div style={{fontSize:11,color:T.txt3,marginTop:5}}>Track monthly limits</div></>}
+                <AnimatedNumber value={Math.max(totalBudget-totalBudgetSpent,0)} format={fmt} style={{fontSize:18,fontWeight:700,letterSpacing:-.4,color:totalBudgetSpent>totalBudget?T.red:T.txt,fontVariantNumeric:"tabular-nums"}}/>
+                <div style={{height:3,background:T.border,borderRadius:99,marginTop:6,overflow:"hidden"}}><div style={{height:"100%",borderRadius:99,width:Math.min(totalBudgetSpent/totalBudget*100,100)+"%",background:totalBudgetSpent>totalBudget?T.red:T.green,transition:"width .6s"}}/></div>
+              </>:<><div style={{fontSize:14,fontWeight:700,color:T.acc}}>Set up →</div><div style={{fontSize:10,color:T.txt3,marginTop:3}}>Track monthly limits</div></>}
             </div>
           </div>
 
           {overBudget.length>0&&(
-            <div onClick={()=>{setTab("stats");setAnaView("budget");}} className="mt-press" style={{background:dark?"#2d0000":"#ffe5e3",border:`1px solid ${dark?"#5c1a1a":"#fca5a5"}`,borderRadius:16,padding:"12px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
-              <span style={{fontSize:18}}>⚠️</span>
+            <div onClick={()=>{setTab("stats");setAnaView("budget");}} className="mt-press" style={{background:dark?"#2d0000":"#ffe5e3",border:`1px solid ${dark?"#5c1a1a":"#fca5a5"}`,borderRadius:20,padding:"12px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
+              {I.budget(dark?"#ff6b6b":"#b91c1c",17)}
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontWeight:600,fontSize:14,color:dark?"#ff6b6b":"#b91c1c"}}>{overBudget.length} budget{overBudget.length>1?"s":""} over limit</div>
                 <div style={{fontSize:12,color:dark?"#ff8888":"#dc2626",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{overBudget.map(b=>b.label).join(", ")}</div>
@@ -873,18 +890,19 @@ function App(){
           )}
 
           {insights.length>0&&(
-            <div style={{marginBottom:14}}>
-              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}>{I.spark(T.acc)}<span style={{fontWeight:700,fontSize:16}}>Smart Insights</span></div>
+            <div style={{marginBottom:12}}>
+              <span className="mt-label" style={{color:T.txt3}}>Insights</span>
               <div className="mt-hscroll">
                 {insights.map((ins,i)=>{
                   const tones={green:[T.green,dark?"#0c2a16":"#e7f9ee"],red:[T.red,dark?"#2d0000":"#ffe5e3"],blue:[T.acc,dark?"#001533":"#e7f0ff"]};
                   const [cc,bg]=tones[ins.tone]||tones.blue;
                   return(
-                    <div key={i} className="mt-rise" style={{width:148,background:T.card,borderRadius:18,padding:"14px",animationDelay:i*45+"ms"}}>
-                      <div style={{width:34,height:34,borderRadius:11,background:bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,marginBottom:9}}>{ins.icon}</div>
-                      <div style={{fontSize:11,color:T.txt2,fontWeight:500}}>{ins.label}</div>
-                      <div style={{fontSize:18,fontWeight:700,color:cc,letterSpacing:-.3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ins.value}</div>
-                      <div style={{fontSize:11,color:T.txt3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ins.sub}</div>
+                    <div key={i} onClick={()=>{haptic(8);setTab("stats");setAnaView("spend");}} className="mt-tap" style={{display:"flex",alignItems:"center",gap:9,background:T.card,borderRadius:12,padding:"10px 13px",maxWidth:210}}>
+                      <div style={{width:30,height:30,borderRadius:9,background:bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>{ins.icon}</div>
+                      <div style={{minWidth:0}}>
+                        <div style={{fontSize:10,color:T.txt3,whiteSpace:"nowrap"}}>{ins.label}</div>
+                        <div style={{fontSize:14,fontWeight:700,color:cc,letterSpacing:-.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{ins.value} <span style={{fontSize:10,fontWeight:400,color:T.txt3}}>{ins.sub}</span></div>
+                      </div>
                     </div>
                   );
                 })}
@@ -892,50 +910,52 @@ function App(){
             </div>
           )}
 
-          <div style={{background:T.card,borderRadius:18,padding:"14px 14px 10px",marginBottom:14}}>
-            <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:10}}>
-              <span style={{fontWeight:600,fontSize:15}}>Income vs My Expenses</span>
-              <span style={{fontSize:11,color:T.txt3}}>tap month</span>
+          <div>
+            <span className="mt-label" style={{color:T.txt3}}>Income vs expenses</span>
+            <div style={{background:T.card,borderRadius:20,padding:"14px 14px 10px",marginBottom:12}}>
+              <MiniChart data={chartD} T={T} fmt={fmt}/>
             </div>
-            <MiniChart data={chartD} T={T} fmt={fmt}/>
           </div>
 
-          <div style={{background:T.card,borderRadius:18,marginBottom:14,overflow:"hidden"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px 10px"}}>
-              <span style={{fontWeight:600,fontSize:15}}>Recent</span>
-              <button onClick={()=>setTab("txs")} style={{background:"none",border:"none",color:T.acc,fontSize:14,cursor:"pointer",fontWeight:500,padding:0}}>See all</button>
+          <div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline"}}>
+              <span className="mt-label" style={{color:T.txt3}}>Recent</span>
+              <button onClick={()=>goTxs("")} style={{background:"none",border:"none",color:T.acc,fontSize:12,fontWeight:600,cursor:"pointer",padding:0}}>See all</button>
             </div>
-            {recTxs.length===0?<div style={{padding:"4px 16px 16px",color:T.txt3,fontSize:14}}>No transactions yet</div>
-            :recTxs.map((t,i)=>{
-              const c=getCat(t.category),a=accs.find(x=>x.id===t.accountId);
-              const disp=personalAmt(t);
-              return(
-                <div key={t.id} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 16px",borderTop:i>0?`1px solid ${T.border}`:"none"}}>
-                  <div style={{width:42,height:42,borderRadius:13,background:c.color+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{c.icon}</div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{display:"flex",alignItems:"center",gap:5}}>
-                      <div style={{fontWeight:600,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.merchant||"Unknown"}</div>
-                      {t.isSplit&&<span style={{fontSize:10,fontWeight:600,background:dark?"#002e14":"#d4f5df",color:dark?"#30d158":"#16a34a",borderRadius:6,padding:"1px 5px",flexShrink:0}}>split</span>}
+            <div style={{background:T.card,borderRadius:20,marginBottom:12,overflow:"hidden"}}>
+              {recTxs.length===0?<div style={{padding:"14px 16px",color:T.txt3,fontSize:14}}>No transactions yet</div>
+              :recTxs.map((t,i)=>{
+                const c=getCat(t.category),a=accs.find(x=>x.id===t.accountId);
+                const disp=personalAmt(t);
+                return(
+                  <div key={t.id} onClick={()=>{haptic(8);doEditTx(t);}} className="mt-tap" style={{display:"flex",alignItems:"center",gap:11,padding:"10px 15px",borderTop:i>0?`1px solid ${T.border}`:"none"}}>
+                    <div style={{width:38,height:38,borderRadius:12,background:c.color+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{c.icon}</div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{display:"flex",alignItems:"center",gap:5}}>
+                        <div style={{fontWeight:600,fontSize:14,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.merchant||"Unknown"}</div>
+                        {t.isSplit&&<span style={{fontSize:10,fontWeight:600,background:dark?"#002e14":"#d4f5df",color:dark?"#30d158":"#16a34a",borderRadius:6,padding:"1px 5px",flexShrink:0}}>split</span>}
+                      </div>
+                      <div style={{fontSize:11,color:T.txt2}}>{a?.name||"?"} · {t.date}</div>
                     </div>
-                    <div style={{fontSize:12,color:T.txt2}}>{a?.name||"?"} · {t.date}</div>
-                  </div>
-                  <div style={{textAlign:"right",flexShrink:0}}>
-                    <div style={{fontWeight:700,fontSize:16,color:t.type==="income"?T.green:t.type==="expense"?T.red:T.txt2}}>
-                      {t.type==="income"?"+":t.type==="expense"?"−":"⇄"}{fmt(disp)}
+                    <div style={{textAlign:"right",flexShrink:0}}>
+                      <div style={{fontWeight:700,fontSize:14,color:t.type==="income"?T.green:t.type==="expense"?T.red:T.txt2,fontVariantNumeric:"tabular-nums"}}>
+                        {t.type==="income"?"+":t.type==="expense"?"−":"⇄"}{fmt(disp)}
+                      </div>
+                      {t.isSplit&&<div style={{fontSize:10,color:T.txt3}}>of {fmt(t.amount)}</div>}
                     </div>
-                    {t.isSplit&&<div style={{fontSize:10,color:T.txt3}}>of {fmt(t.amount)}</div>}
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
 
           {goals.length>0&&(
-            <div style={{background:T.card,borderRadius:18,padding:"14px 16px",marginBottom:14}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-                <span style={{fontWeight:600,fontSize:15}}>Savings Goals</span>
-                <button onClick={()=>setTab("goals")} style={{background:"none",border:"none",color:T.acc,fontSize:14,cursor:"pointer",fontWeight:500,padding:0}}>See all</button>
-              </div>
+            <div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline"}}>
+              <span className="mt-label" style={{color:T.txt3}}>Savings goals</span>
+              <button onClick={()=>{haptic(8);setTab("goals");}} style={{background:"none",border:"none",color:T.acc,fontSize:12,fontWeight:600,cursor:"pointer",padding:0}}>See all</button>
+            </div>
+            <div onClick={()=>{haptic(8);setTab("goals");}} className="mt-tap" style={{background:T.card,borderRadius:20,padding:"13px 15px 4px",marginBottom:12}}>
               {goals.slice(0,2).map(g=>{
                 const pct=Math.min(g.savedAmount/g.targetAmount*100,100);
                 return(
@@ -950,20 +970,23 @@ function App(){
                 );
               })}
             </div>
+            </div>
           )}
 
-          <div style={{background:T.card,borderRadius:18,padding:"14px 16px",marginBottom:90}}>
-            <div style={{fontWeight:600,fontSize:15,marginBottom:12}}>Top Categories</div>
-            {catD.length===0?<div style={{color:T.txt3,fontSize:14}}>No spending yet</div>
-            :catD.slice(0,5).map(c=>(
-              <div key={c.id} style={{marginBottom:11}}>
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:14,marginBottom:5}}>
-                  <span style={{color:T.txt2}}>{c.icon} {c.label}</span>
-                  <span style={{fontWeight:600}}>{fmt(c.total)}</span>
+          <div style={{marginBottom:90}}>
+            <span className="mt-label" style={{color:T.txt3}}>Top categories</span>
+            <div style={{background:T.card,borderRadius:20,padding:"13px 15px 4px"}}>
+              {catD.length===0?<div style={{color:T.txt3,fontSize:14,paddingBottom:10}}>No spending yet</div>
+              :catD.slice(0,5).map(c=>(
+                <div key={c.id} onClick={()=>{haptic(8);setTab("stats");setAnaView("spend");setDrillCat(c.id);}} className="mt-tap" style={{marginBottom:12}}>
+                  <div style={{display:"flex",justifyContent:"space-between",fontSize:13,marginBottom:5}}>
+                    <span style={{color:T.txt2}}>{c.icon} {c.label}</span>
+                    <span style={{fontWeight:600,fontVariantNumeric:"tabular-nums"}}>{fmt(c.total)}</span>
+                  </div>
+                  <div style={{height:4,background:T.border,borderRadius:99}}><div style={{height:"100%",borderRadius:99,background:c.color,width:`${(c.total/mxCat)*100}%`,transition:"width .4s"}}/></div>
                 </div>
-                <div style={{height:5,background:T.border,borderRadius:99}}><div style={{height:"100%",borderRadius:99,background:c.color,width:`${(c.total/mxCat)*100}%`,transition:"width .4s"}}/></div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </>}
 
@@ -971,34 +994,39 @@ function App(){
         {tab==="txs"&&<>
           <div style={{position:"relative",marginBottom:10}}>
             <div style={{position:"absolute",left:13,top:"50%",transform:"translateY(-50%)"}}>{I.srch(T.txt3)}</div>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search merchant…" style={{display:"block",width:"100%",background:T.card,color:T.txt,border:"none",borderRadius:13,padding:"12px 40px 12px 38px",fontSize:16,outline:"none"}}/>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search merchant…" style={{display:"block",width:"100%",background:T.card,color:T.txt,border:"none",borderRadius:12,padding:"12px 40px 12px 38px",fontSize:16,outline:"none"}}/>
             {search&&<button onClick={()=>setSearch("")} style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{I.x(T.txt3)}</button>}
           </div>
+          <div style={{display:"flex",gap:7,marginBottom:10}}>
+            {[["","All"],["income","Income"],["expense","Expenses"],["transfer","Transfers"]].map(([v,l])=>(
+              <button key={v} onClick={()=>{haptic(8);setFType(v);}} className="mt-press" style={{flex:1,padding:"8px 0",borderRadius:99,border:"none",background:fType===v?T.acc:T.card,color:fType===v?"#fff":T.txt2,fontWeight:600,fontSize:13,cursor:"pointer"}}>{l}</button>
+            ))}
+          </div>
           <div style={{display:"flex",gap:8,marginBottom:10,overflowX:"auto",paddingBottom:2}}>
-            <select value={fCat} onChange={e=>setFCat(e.target.value)} style={{background:T.card,color:T.txt,border:"none",borderRadius:10,padding:"9px 14px",fontSize:14,flexShrink:0,outline:"none"}}>
+            <select value={fCat} onChange={e=>setFCat(e.target.value)} style={{background:T.card,color:T.txt,border:"none",borderRadius:12,padding:"9px 14px",fontSize:14,flexShrink:0,outline:"none"}}>
               <option value="">All categories</option>
               {cats.map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
             </select>
-            <select value={fAcc} onChange={e=>setFAcc(e.target.value)} style={{background:T.card,color:T.txt,border:"none",borderRadius:10,padding:"9px 14px",fontSize:14,flexShrink:0,outline:"none"}}>
+            <select value={fAcc} onChange={e=>setFAcc(e.target.value)} style={{background:T.card,color:T.txt,border:"none",borderRadius:12,padding:"9px 14px",fontSize:14,flexShrink:0,outline:"none"}}>
               <option value="">All accounts</option>
               {accs.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
           </div>
           {search&&filtTxs.length>0&&(
-            <div style={{background:dark?"#001533":"#deeaff",borderRadius:13,padding:"10px 14px",marginBottom:10,display:"flex",justifyContent:"space-between",fontSize:14}}>
+            <div style={{background:dark?"#001533":"#deeaff",borderRadius:12,padding:"10px 14px",marginBottom:10,display:"flex",justifyContent:"space-between",fontSize:14}}>
               <span style={{fontWeight:600,color:T.acc}}>"{search}"</span>
               {/* FIX: use personalAmt for search total */}
               <span style={{color:T.txt2}}>{filtTxs.length} txs · <strong style={{color:T.acc}}>{fmt(filtTxs.filter(t=>t.type==="expense").reduce((s,t)=>s+personalAmt(t),0))}</strong></span>
             </div>
           )}
-          <div style={{background:T.card,borderRadius:18,overflow:"hidden",marginBottom:90}}>
+          <div style={{background:T.card,borderRadius:20,overflow:"hidden",marginBottom:90}}>
             {filtTxs.length===0?<div style={{padding:24,color:T.txt3,textAlign:"center",fontSize:14}}>No transactions found</div>
             :filtTxs.map((t,i)=>{
               const c=getCat(t.category),a=accs.find(x=>x.id===t.accountId);
               const disp=personalAmt(t);
               return(
-                <div key={t.id} style={{display:"flex",alignItems:"center",gap:12,padding:"13px 16px",borderTop:i>0?`1px solid ${T.border}`:"none"}}>
-                  <div style={{width:44,height:44,borderRadius:13,background:c.color+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{c.icon}</div>
+                <div key={t.id} onClick={()=>{haptic(8);doEditTx(t);}} className="mt-tap" style={{display:"flex",alignItems:"center",gap:12,padding:"13px 16px",borderTop:i>0?`1px solid ${T.border}`:"none"}}>
+                  <div style={{width:44,height:44,borderRadius:12,background:c.color+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{c.icon}</div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:1}}>
                       <div style={{fontWeight:600,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.merchant||"Unknown"}</div>
@@ -1013,8 +1041,8 @@ function App(){
                     </span>
                     {t.isSplit&&<div style={{fontSize:10,color:T.txt3}}>full {fmt(t.amount)}</div>}
                     <div style={{display:"flex",gap:10}}>
-                      <button onClick={()=>doEditTx(t)} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2}}>{I.edit(T.acc)}</button>
-                      <button onClick={()=>doDeleteTx(t.id)} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2}}>{I.trash(T.red)}</button>
+                      <button onClick={e=>{e.stopPropagation();doEditTx(t);}} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2}}>{I.edit(T.acc)}</button>
+                      <button onClick={e=>{e.stopPropagation();doDeleteTx(t.id);}} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2}}>{I.trash(T.red)}</button>
                     </div>
                   </div>
                 </div>
@@ -1033,33 +1061,33 @@ function App(){
 
           {peopleView==="splits"&&<>
             {pendingSplits.length>0&&(
-              <div style={{background:dark?"#002e14":"#d4f5df",borderRadius:16,padding:"14px 16px",marginBottom:14}}>
+              <div style={{background:dark?"#002e14":"#d4f5df",borderRadius:20,padding:"14px 16px",marginBottom:14}}>
                 <div style={{fontWeight:700,fontSize:16,color:dark?"#30d158":"#15803d",marginBottom:4}}>💸 {fmt(totalOwed)} to collect</div>
                 <div style={{fontSize:13,color:dark?"#4ade80":"#16a34a",marginBottom:10}}>{pendingSplits.length} split{pendingSplits.length>1?"s":""} pending</div>
                 <button onClick={settleAll} style={{background:dark?"#30d158":"#16a34a",color:"#fff",border:"none",borderRadius:12,padding:"11px 20px",fontWeight:700,fontSize:15,cursor:"pointer",width:"100%"}}>Settle All → Log Income</button>
               </div>
             )}
             {pendingSplits.length===0
-              ?<div style={{background:T.card,borderRadius:16,padding:"24px",textAlign:"center",color:T.txt3,fontSize:14,marginBottom:90}}>No pending splits 🎉</div>
-              :<div style={{background:T.card,borderRadius:18,overflow:"hidden",marginBottom:90}}>
+              ?<div style={{background:T.card,borderRadius:20,padding:"24px",textAlign:"center",color:T.txt3,fontSize:14,marginBottom:90}}>No pending splits 🎉</div>
+              :<div style={{background:T.card,borderRadius:20,overflow:"hidden",marginBottom:90}}>
                 {pendingSplits.map((t,i)=>{
                   const c=getCat(t.category),full=parseFloat(t.amount)||0,share=full/Math.max(t.splitPeople||1,1),owed=full-share;
                   return(
                     <div key={t.id} style={{padding:"13px 16px",borderTop:i>0?`1px solid ${T.border}`:"none"}}>
                       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
-                        <div style={{width:42,height:42,borderRadius:13,background:c.color+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{c.icon}</div>
+                        <div style={{width:42,height:42,borderRadius:12,background:c.color+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{c.icon}</div>
                         <div style={{flex:1}}><div style={{fontWeight:600,fontSize:15}}>{t.merchant}</div><div style={{fontSize:12,color:T.txt2}}>{t.date} · {t.splitPeople} people</div></div>
                         <div style={{textAlign:"right"}}><div style={{fontWeight:700,color:T.green,fontSize:15}}>+{fmt(owed)}</div><div style={{fontSize:11,color:T.txt3}}>owed to you</div></div>
                       </div>
                       <div style={{display:"flex",gap:8,marginBottom:8}}>
                         {[["Full",fmt(full),T.red],["Your share",fmt(share),T.txt],["Others pay",fmt(owed),T.green]].map(([l,v,co])=>(
-                          <div key={l} style={{flex:1,background:T.bg,borderRadius:10,padding:"8px 6px",textAlign:"center"}}>
+                          <div key={l} style={{flex:1,background:T.bg,borderRadius:12,padding:"8px 6px",textAlign:"center"}}>
                             <div style={{fontSize:10,color:T.txt3}}>{l}</div>
                             <div style={{fontWeight:700,color:co,marginTop:1,fontSize:12}}>{v}</div>
                           </div>
                         ))}
                       </div>
-                      <button onClick={()=>settleSplit(t)} style={{width:"100%",background:"none",border:`1.5px solid ${T.acc}`,borderRadius:11,padding:"9px",color:T.acc,fontWeight:600,fontSize:14,cursor:"pointer"}}>Settle → Log Income</button>
+                      <button onClick={()=>settleSplit(t)} style={{width:"100%",background:"none",border:`1.5px solid ${T.acc}`,borderRadius:12,padding:"9px",color:T.acc,fontWeight:600,fontSize:14,cursor:"pointer"}}>Settle → Log Income</button>
                     </div>
                   );
                 })}
@@ -1070,12 +1098,12 @@ function App(){
           {peopleView==="debts"&&<>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
               <div style={{fontSize:14,color:T.txt2}}>{activeDebts.length>0?`Total owed: ${fmt(totalDebt)}`:"No active debts"}</div>
-              <button onClick={()=>{setDebtForm(iDebt);setEditId(null);setModal("debt");}} style={{display:"flex",alignItems:"center",gap:4,background:T.red,color:"#fff",border:"none",borderRadius:10,padding:"8px 14px",fontWeight:600,fontSize:13,cursor:"pointer"}}>
+              <button onClick={()=>{setDebtForm(iDebt);setEditId(null);setModal("debt");}} style={{display:"flex",alignItems:"center",gap:4,background:T.red,color:"#fff",border:"none",borderRadius:12,padding:"8px 14px",fontWeight:600,fontSize:13,cursor:"pointer"}}>
                 {I.plus("#fff",14)} Add Debt
               </button>
             </div>
             {activeDebts.length===0
-              ?<div style={{background:T.card,borderRadius:16,padding:"32px 20px",textAlign:"center",marginBottom:14}}>
+              ?<div style={{background:T.card,borderRadius:20,padding:"32px 20px",textAlign:"center",marginBottom:14}}>
                 <div style={{fontSize:44,marginBottom:10}}>🙌</div>
                 <div style={{fontWeight:600,fontSize:16,color:T.txt,marginBottom:6}}>No debts logged</div>
                 <div style={{color:T.txt3,fontSize:14}}>Add a debt to track what you owe friends</div>
@@ -1085,9 +1113,9 @@ function App(){
                   const pct=Math.min(d.paidBack/d.totalAmount*100,100),remaining=d.totalAmount-d.paidBack;
                   const accName=accs.find(a=>a.id===d.receivedInAccount)?.name;
                   return(
-                    <div key={d.id} style={{background:T.card,borderRadius:18,padding:"16px"}}>
+                    <div key={d.id} style={{background:T.card,borderRadius:20,padding:"16px"}}>
                       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
-                        <div style={{width:52,height:52,borderRadius:16,background:d.color,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:24,flexShrink:0}}>{d.personName[0]?.toUpperCase()}</div>
+                        <div style={{width:52,height:52,borderRadius:20,background:d.color,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:24,flexShrink:0}}>{d.personName[0]?.toUpperCase()}</div>
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{fontWeight:700,fontSize:17}}>{d.personName}</div>
                           <div style={{fontSize:12,color:T.txt2}}>Borrowed {fmt(d.totalAmount)} · {d.date}</div>
@@ -1105,8 +1133,8 @@ function App(){
                       <div style={{fontSize:12,color:T.txt3,marginBottom:12}}>{pct.toFixed(0)}% paid · {fmt(d.paidBack)} of {fmt(d.totalAmount)}</div>
                       <div style={{display:"flex",gap:8}}>
                         <button onClick={()=>openRepay(d)} style={{flex:1,background:T.acc,color:"#fff",border:"none",borderRadius:12,padding:"11px",fontWeight:700,fontSize:14,cursor:"pointer"}}>Log Repayment</button>
-                        <button onClick={()=>doEditDebt(d)} style={{background:T.bg,border:`1px solid ${T.border}`,borderRadius:11,width:44,height:44,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>{I.edit(T.acc)}</button>
-                        <button onClick={()=>delDebt(d.id)} style={{background:T.bg,border:`1px solid ${T.border}`,borderRadius:11,width:44,height:44,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>{I.trash(T.red)}</button>
+                        <button onClick={()=>doEditDebt(d)} style={{background:T.bg,border:`1px solid ${T.border}`,borderRadius:12,width:44,height:44,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>{I.edit(T.acc)}</button>
+                        <button onClick={()=>delDebt(d.id)} style={{background:T.bg,border:`1px solid ${T.border}`,borderRadius:12,width:44,height:44,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>{I.trash(T.red)}</button>
                       </div>
                     </div>
                   );
@@ -1117,7 +1145,7 @@ function App(){
               <div style={{fontSize:13,fontWeight:600,color:T.txt2,marginBottom:8}}>Fully Paid ✓</div>
               <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:90}}>
                 {settledDebts.map(d=>(
-                  <div key={d.id} style={{background:T.card,borderRadius:14,padding:"12px 16px",display:"flex",alignItems:"center",gap:12,opacity:.55}}>
+                  <div key={d.id} style={{background:T.card,borderRadius:12,padding:"12px 16px",display:"flex",alignItems:"center",gap:12,opacity:.55}}>
                     <div style={{width:40,height:40,borderRadius:12,background:d.color,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:18,flexShrink:0}}>{d.personName[0]?.toUpperCase()}</div>
                     <div style={{flex:1}}><div style={{fontWeight:600,fontSize:15}}>{d.personName}</div><div style={{fontSize:12,color:T.txt2}}>{fmt(d.totalAmount)} · paid back 🎉</div></div>
                     <button onClick={()=>delDebt(d.id)} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{I.trash(T.red)}</button>
@@ -1131,19 +1159,19 @@ function App(){
           {peopleView==="recurring"&&<>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
               <div style={{fontSize:14,color:T.txt2}}>{recurring.length} recurring transactions</div>
-              <button onClick={()=>{setRecForm({...iRec,accountId:accs[0]?.id||""});setEditId(null);setModal("rec");}} style={{display:"flex",alignItems:"center",gap:4,background:T.acc,color:"#fff",border:"none",borderRadius:10,padding:"8px 14px",fontWeight:600,fontSize:13,cursor:"pointer"}}>
+              <button onClick={()=>{setRecForm({...iRec,accountId:accs[0]?.id||""});setEditId(null);setModal("rec");}} style={{display:"flex",alignItems:"center",gap:4,background:T.acc,color:"#fff",border:"none",borderRadius:12,padding:"8px 14px",fontWeight:600,fontSize:13,cursor:"pointer"}}>
                 {I.plus("#fff",14)} Add
               </button>
             </div>
             {recurring.length===0
-              ?<div style={{background:T.card,borderRadius:16,padding:"24px",textAlign:"center",color:T.txt3,fontSize:14,marginBottom:90}}>No recurring transactions yet</div>
+              ?<div style={{background:T.card,borderRadius:20,padding:"24px",textAlign:"center",color:T.txt3,fontSize:14,marginBottom:90}}>No recurring transactions yet</div>
               :<div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:90}}>
                 {recurring.map(r=>{
                   const c=getCat(r.category),isDue=recurringDue.find(x=>x.id===r.id);
                   return(
-                    <div key={r.id} style={{background:T.card,borderRadius:16,padding:"13px 16px"}}>
+                    <div key={r.id} style={{background:T.card,borderRadius:20,padding:"13px 16px"}}>
                       <div style={{display:"flex",alignItems:"center",gap:12}}>
-                        <div style={{width:44,height:44,borderRadius:13,background:c.color+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,position:"relative"}}>
+                        <div style={{width:44,height:44,borderRadius:12,background:c.color+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,position:"relative"}}>
                           {c.icon}
                           {isDue&&<div style={{position:"absolute",top:-3,right:-3,width:10,height:10,borderRadius:99,background:"#fbbf24",border:"2px solid "+T.card}}/>}
                         </div>
@@ -1175,10 +1203,10 @@ function App(){
         {tab==="goals"&&<>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
             <div style={{fontWeight:700,fontSize:20}}>Savings Goals</div>
-            <button onClick={()=>{setGoalForm(iGoal);setEditId(null);setModal("goal");}} style={{display:"flex",alignItems:"center",gap:6,background:T.acc,color:"#fff",border:"none",borderRadius:13,padding:"10px 16px",fontWeight:600,fontSize:15,cursor:"pointer"}}>{I.plus("#fff",18)} Add</button>
+            <button onClick={()=>{setGoalForm(iGoal);setEditId(null);setModal("goal");}} style={{display:"flex",alignItems:"center",gap:6,background:T.acc,color:"#fff",border:"none",borderRadius:12,padding:"10px 16px",fontWeight:600,fontSize:15,cursor:"pointer"}}>{I.plus("#fff",18)} Add</button>
           </div>
           {goals.length===0
-            ?<div style={{background:T.card,borderRadius:18,padding:"32px 20px",textAlign:"center",marginBottom:90}}>
+            ?<div style={{background:T.card,borderRadius:20,padding:"32px 20px",textAlign:"center",marginBottom:90}}>
               <div style={{fontSize:48,marginBottom:10}}>🎯</div>
               <div style={{fontWeight:600,fontSize:16,marginBottom:6}}>No goals yet</div>
               <div style={{color:T.txt3,fontSize:14}}>Set a savings goal to track progress</div>
@@ -1187,10 +1215,10 @@ function App(){
               {goals.map(g=>{
                 const pct=Math.min(g.savedAmount/g.targetAmount*100,100),done=pct>=100;
                 return(
-                  <div key={g.id} style={{background:T.card,borderRadius:18,padding:"18px 16px",position:"relative",overflow:"hidden"}}>
+                  <div key={g.id} onClick={()=>{haptic(8);doEditGoal(g);}} className="mt-tap" style={{background:T.card,borderRadius:20,padding:"18px 16px",position:"relative",overflow:"hidden"}}>
                     {done&&<div style={{position:"absolute",top:0,right:0,background:T.green,color:"#fff",fontSize:11,fontWeight:700,padding:"4px 10px",borderRadius:"0 18px 0 10px"}}>REACHED! 🎉</div>}
                     <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
-                      <div style={{width:54,height:54,borderRadius:16,background:(g.color||T.acc)+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0}}>{g.icon}</div>
+                      <div style={{width:54,height:54,borderRadius:20,background:(g.color||T.acc)+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0}}>{g.icon}</div>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontWeight:700,fontSize:17}}>{g.name}</div>
                         <div style={{fontSize:13,color:T.txt2,marginTop:2}}>{done?"Goal reached!":fmt(g.targetAmount-g.savedAmount)+" to go"}</div>
@@ -1201,8 +1229,8 @@ function App(){
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                       <span style={{fontSize:13,fontWeight:600,color:g.color||T.acc}}>{pct.toFixed(0)}% saved</span>
                       <div style={{display:"flex",gap:14}}>
-                        <button onClick={()=>doEditGoal(g)} style={{background:"none",border:"none",cursor:"pointer",padding:2}}>{I.edit(T.acc)}</button>
-                        <button onClick={()=>delGoal(g.id)} style={{background:"none",border:"none",cursor:"pointer",padding:2}}>{I.trash(T.red)}</button>
+                        <button onClick={e=>{e.stopPropagation();doEditGoal(g);}} style={{background:"none",border:"none",cursor:"pointer",padding:2}}>{I.edit(T.acc)}</button>
+                        <button onClick={e=>{e.stopPropagation();delGoal(g.id);}} style={{background:"none",border:"none",cursor:"pointer",padding:2}}>{I.trash(T.red)}</button>
                       </div>
                     </div>
                   </div>
@@ -1216,14 +1244,14 @@ function App(){
         {tab==="accs"&&<>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
             <div><div style={{fontWeight:700,fontSize:20}}>Accounts</div><div style={{fontSize:13,color:T.txt2,marginTop:1}}>Net: {fmt(totBal)}</div></div>
-            <button onClick={()=>{setAccForm(iAcc);setEditId(null);setModal("acc");}} style={{display:"flex",alignItems:"center",gap:6,background:T.acc,color:"#fff",border:"none",borderRadius:13,padding:"10px 16px",fontWeight:600,fontSize:15,cursor:"pointer"}}>{I.plus("#fff",18)} Add</button>
+            <button onClick={()=>{setAccForm(iAcc);setEditId(null);setModal("acc");}} style={{display:"flex",alignItems:"center",gap:6,background:T.acc,color:"#fff",border:"none",borderRadius:12,padding:"10px 16px",fontWeight:600,fontSize:15,cursor:"pointer"}}>{I.plus("#fff",18)} Add</button>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:90}}>
             {accs.map(a=>{
               const bal=getBal(a.id),cnt=txs.filter(t=>t.accountId===a.id||t.toAccountId===a.id).length;
               return(
-                <div key={a.id} style={{background:T.card,borderRadius:18,padding:"14px 16px",display:"flex",alignItems:"center",gap:14}}>
-                  <div style={{width:50,height:50,borderRadius:15,background:a.color,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:22,flexShrink:0}}>{a.name[0]}</div>
+                <div key={a.id} onClick={()=>{haptic(8);setFType("");setSearch("");setFCat("");setFAcc(a.id);setTab("txs");}} className="mt-tap" style={{background:T.card,borderRadius:20,padding:"14px 16px",display:"flex",alignItems:"center",gap:14}}>
+                  <div style={{width:50,height:50,borderRadius:12,background:a.color,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:22,flexShrink:0}}>{a.name[0]}</div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontWeight:600,fontSize:16}}>{a.name}</div>
                     <div style={{fontSize:12,color:T.txt2,marginTop:2}}>{cnt} transactions · initial {fmt(a.ib)}</div>
@@ -1231,8 +1259,8 @@ function App(){
                   <div style={{textAlign:"right",flexShrink:0}}>
                     <div style={{fontWeight:700,fontSize:18,color:bal>=0?T.green:T.red}}>{fmt(bal)}</div>
                     <div style={{display:"flex",gap:12,justifyContent:"flex-end",marginTop:5}}>
-                      <button onClick={()=>doEditAcc(a)} style={{background:"none",border:"none",cursor:"pointer",padding:2}}>{I.edit(T.acc)}</button>
-                      <button onClick={()=>delAcc(a.id)} style={{background:"none",border:"none",cursor:"pointer",padding:2}}>{I.trash(T.red)}</button>
+                      <button onClick={e=>{e.stopPropagation();doEditAcc(a);}} style={{background:"none",border:"none",cursor:"pointer",padding:2}}>{I.edit(T.acc)}</button>
+                      <button onClick={e=>{e.stopPropagation();delAcc(a.id);}} style={{background:"none",border:"none",cursor:"pointer",padding:2}}>{I.trash(T.red)}</button>
                     </div>
                   </div>
                 </div>
@@ -1245,13 +1273,13 @@ function App(){
         {tab==="categories"&&<>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
             <div><div style={{fontWeight:700,fontSize:20}}>Categories</div><div style={{fontSize:13,color:T.txt2,marginTop:1}}>{cats.length} categories</div></div>
-            <button onClick={()=>{setCatForm(iCat);setEditId(null);setModal("cat");}} style={{display:"flex",alignItems:"center",gap:6,background:T.acc,color:"#fff",border:"none",borderRadius:13,padding:"10px 16px",fontWeight:600,fontSize:15,cursor:"pointer"}}>{I.plus("#fff",18)} Add</button>
+            <button onClick={()=>{setCatForm(iCat);setEditId(null);setModal("cat");}} style={{display:"flex",alignItems:"center",gap:6,background:T.acc,color:"#fff",border:"none",borderRadius:12,padding:"10px 16px",fontWeight:600,fontSize:15,cursor:"pointer"}}>{I.plus("#fff",18)} Add</button>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:90}}>
             {cats.map(c=>(
-              <div key={c.id} style={{background:T.card,borderRadius:18,padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:14}}>
+              <div key={c.id} style={{background:T.card,borderRadius:20,padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:14}}>
                 <div style={{display:"flex",alignItems:"center",gap:12}}>
-                  <div style={{width:44,height:44,borderRadius:14,background:c.color+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>{c.icon}</div>
+                  <div style={{width:44,height:44,borderRadius:12,background:c.color+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>{c.icon}</div>
                   <div><div style={{fontWeight:600,fontSize:16}}>{c.label}</div><div style={{fontSize:12,color:T.txt2}}>{c.id}</div></div>
                 </div>
                 <div style={{display:"flex",gap:10}}>
@@ -1272,11 +1300,11 @@ function App(){
             const c=catD.find(x=>x.id===drillCat);if(!c)return null;
             return(<>
               <button onClick={()=>setDrillCat(null)} style={{display:"flex",alignItems:"center",gap:4,background:"none",border:"none",color:T.acc,fontSize:15,cursor:"pointer",marginBottom:12,fontWeight:500,padding:0}}>{I.back(T.acc)} Categories</button>
-              <div style={{background:T.card,borderRadius:18,padding:"16px",marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
+              <div style={{background:T.card,borderRadius:20,padding:"16px",marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
                 <span style={{fontSize:36}}>{c.icon}</span>
                 <div><div style={{fontWeight:700,fontSize:17}}>{c.label}</div><div style={{fontSize:13,color:T.txt2}}>{fmt(c.total)} personal · {Object.keys(c.merchants).length} merchants</div></div>
               </div>
-              <div style={{background:T.card,borderRadius:18,overflow:"hidden",marginBottom:90}}>
+              <div style={{background:T.card,borderRadius:20,overflow:"hidden",marginBottom:90}}>
                 {Object.entries(c.merchants).sort(([,a],[,b])=>b-a).map(([m,tot],i)=>{
                   const cnt=txs.filter(t=>t.merchant===m&&t.category===drillCat).length;
                   return(
@@ -1292,8 +1320,8 @@ function App(){
             catD.length===0?<div style={{color:T.txt3,fontSize:14}}>No spending data yet.</div>
             :<div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:90}}>
               {catD.map(c=>(
-                <div key={c.id} onClick={()=>setDrillCat(c.id)} style={{background:T.card,borderRadius:18,padding:"14px 16px",display:"flex",alignItems:"center",gap:13,cursor:"pointer"}} onTouchStart={e=>e.currentTarget.style.background=T.cardH} onTouchEnd={e=>e.currentTarget.style.background=T.card}>
-                  <div style={{width:48,height:48,borderRadius:14,background:c.color+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{c.icon}</div>
+                <div key={c.id} onClick={()=>setDrillCat(c.id)} style={{background:T.card,borderRadius:20,padding:"14px 16px",display:"flex",alignItems:"center",gap:13,cursor:"pointer"}} onTouchStart={e=>e.currentTarget.style.background=T.cardH} onTouchEnd={e=>e.currentTarget.style.background=T.card}>
+                  <div style={{width:48,height:48,borderRadius:12,background:c.color+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{c.icon}</div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
                       <span style={{fontWeight:600,fontSize:15}}>{c.label}</span>
@@ -1308,7 +1336,7 @@ function App(){
           ))}
 
           {anaView==="budget"&&<>
-            <div style={{background:T.card,borderRadius:18,padding:"16px",marginBottom:14,display:"flex",alignItems:"center",gap:16}}>
+            <div style={{background:T.card,borderRadius:20,padding:"16px",marginBottom:14,display:"flex",alignItems:"center",gap:16}}>
               <Ring pct={totalBudget>0?totalBudgetSpent/totalBudget:0} size={78} stroke={8} color={totalBudgetSpent>totalBudget?T.red:T.acc} track={T.border}>
                 <span style={{fontSize:15,fontWeight:700,color:T.txt}}>{totalBudget>0?Math.round(totalBudgetSpent/totalBudget*100)+"%":"—"}</span>
               </Ring>
@@ -1323,7 +1351,7 @@ function App(){
               {cats.map(c=>{
                 const limit=parseFloat(budgets[c.id])||0,spent=monthCatSpent[c.id]||0,pct=limit>0?spent/limit:0,over=limit>0&&spent>limit;
                 return(
-                  <div key={c.id} style={{background:T.card,borderRadius:16,padding:"13px 14px"}}>
+                  <div key={c.id} style={{background:T.card,borderRadius:20,padding:"13px 14px"}}>
                     <div style={{display:"flex",alignItems:"center",gap:12}}>
                       <div style={{width:40,height:40,borderRadius:12,background:c.color+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{c.icon}</div>
                       <div style={{flex:1,minWidth:0}}>
@@ -1332,7 +1360,7 @@ function App(){
                       </div>
                       <div style={{position:"relative",width:96,flexShrink:0}}>
                         <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:T.txt3,fontSize:14,pointerEvents:"none"}}>€</span>
-                        <input type="number" inputMode="decimal" min="0" placeholder="—" defaultValue={limit||""} onChange={e=>setBudget(c.id,e.target.value)} style={{width:"100%",background:T.bg,color:T.txt,border:`1.5px solid ${T.inpB}`,borderRadius:11,padding:"9px 10px 9px 22px",fontSize:15,textAlign:"right"}}/>
+                        <input type="number" inputMode="decimal" min="0" placeholder="—" defaultValue={limit||""} onChange={e=>setBudget(c.id,e.target.value)} style={{width:"100%",background:T.bg,color:T.txt,border:`1.5px solid ${T.inpB}`,borderRadius:12,padding:"9px 10px 9px 22px",fontSize:15,textAlign:"right"}}/>
                       </div>
                     </div>
                     {limit>0&&<div style={{height:6,background:T.border,borderRadius:99,marginTop:10,overflow:"hidden"}}><div style={{height:"100%",borderRadius:99,width:Math.min(pct*100,100)+"%",background:over?T.red:pct>.85?"#ff9f0a":c.color,transition:"width .5s"}}/></div>}
@@ -1353,11 +1381,11 @@ function App(){
             const atMax=calMonth>=curKey;
             return(<>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-                <button onClick={()=>shift(-1)} className="mt-press" style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:11,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>{I.back(T.acc)}</button>
+                <button onClick={()=>shift(-1)} className="mt-press" style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>{I.back(T.acc)}</button>
                 <div style={{fontWeight:700,fontSize:16}}>{first.toLocaleString("default",{month:"long",year:"numeric"})}</div>
-                <button onClick={()=>shift(1)} disabled={atMax} className="mt-press" style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:11,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",cursor:atMax?"default":"pointer",opacity:atMax?.4:1}}>{I.back2(T.acc)}</button>
+                <button onClick={()=>shift(1)} disabled={atMax} className="mt-press" style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",cursor:atMax?"default":"pointer",opacity:atMax?.4:1}}>{I.back2(T.acc)}</button>
               </div>
-              <div style={{background:T.card,borderRadius:18,padding:"14px",marginBottom:14}}>
+              <div style={{background:T.card,borderRadius:20,padding:"14px",marginBottom:14}}>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:6,marginBottom:7}}>
                   {["M","T","W","T","F","S","S"].map((d,i)=><div key={i} style={{textAlign:"center",fontSize:11,fontWeight:600,color:T.txt3}}>{d}</div>)}
                 </div>
@@ -1375,10 +1403,10 @@ function App(){
                 </div>
               </div>
               <div style={{display:"flex",gap:11,marginBottom:14}}>
-                <div style={{flex:1,background:T.card,borderRadius:16,padding:"14px"}}><div style={{fontSize:12,color:T.txt2,fontWeight:600}}>Month total</div><div style={{fontSize:20,fontWeight:700,color:T.red,marginTop:3}}>{fmt(monthTotal)}</div></div>
-                <div style={{flex:1,background:T.card,borderRadius:16,padding:"14px"}}><div style={{fontSize:12,color:T.txt2,fontWeight:600}}>Active days</div><div style={{fontSize:20,fontWeight:700,marginTop:3}}>{activeDays}<span style={{fontSize:13,color:T.txt3}}> / {dim}</span></div></div>
+                <div style={{flex:1,background:T.card,borderRadius:20,padding:"14px"}}><div style={{fontSize:12,color:T.txt2,fontWeight:600}}>Month total</div><div style={{fontSize:20,fontWeight:700,color:T.red,marginTop:3}}>{fmt(monthTotal)}</div></div>
+                <div style={{flex:1,background:T.card,borderRadius:20,padding:"14px"}}><div style={{fontSize:12,color:T.txt2,fontWeight:600}}>Active days</div><div style={{fontSize:20,fontWeight:700,marginTop:3}}>{activeDays}<span style={{fontSize:13,color:T.txt3}}> / {dim}</span></div></div>
               </div>
-              {busiest&&busiest[1]>0&&<div style={{background:T.card,borderRadius:16,padding:"14px 16px",marginBottom:90,display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:12,color:T.txt2,fontWeight:600}}>Busiest day</div><div style={{fontSize:15,fontWeight:600,marginTop:2}}>{busiest[0]}</div></div><div style={{fontSize:18,fontWeight:700,color:T.red}}>{fmt(busiest[1])}</div></div>}
+              {busiest&&busiest[1]>0&&<div style={{background:T.card,borderRadius:20,padding:"14px 16px",marginBottom:90,display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:12,color:T.txt2,fontWeight:600}}>Busiest day</div><div style={{fontSize:15,fontWeight:600,marginTop:2}}>{busiest[0]}</div></div><div style={{fontSize:18,fontWeight:700,color:T.red}}>{fmt(busiest[1])}</div></div>}
             </>);
           })()}
         </>}
@@ -1401,7 +1429,7 @@ function App(){
               const badge=id==="splits"&&(pendingSplits.length>0||recurringDue.length>0||activeDebts.length>0);
               return(
                 <button key={id} onClick={()=>{haptic(8);setTab(id);}} className="mt-press"
-                  style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2,background:act?T.acc+"18":"transparent",border:"none",cursor:"pointer",padding:"8px 0 6px",borderRadius:17,color:col,position:"relative",transition:"background .25s"}}>
+                  style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2,background:act?T.acc+"18":"transparent",border:"none",cursor:"pointer",padding:"8px 0 6px",borderRadius:20,color:col,position:"relative",transition:"background .25s"}}>
                   {ic(col)}
                   {badge&&<div style={{position:"absolute",top:6,right:"calc(50% - 14px)",width:8,height:8,borderRadius:99,background:T.red,border:`2px solid ${dark?"#262628":"#fff"}`}}/>}
                   <span style={{fontSize:10.5,fontWeight:act?700:500}}>{lbl}</span>
@@ -1416,7 +1444,7 @@ function App(){
       <Sheet open={modal==="tx"} onClose={closeM} title={editId?"Edit Transaction":"New Transaction"} T={T}>
         <div style={{display:"flex",gap:8,marginBottom:18}}>
           {[["expense","💸 Expense"],["income","💰 Income"],["transfer","🔄 Transfer"]].map(([v,l])=>(
-            <button key={v} onClick={()=>setTxForm(f=>({...f,type:v}))} style={{flex:1,padding:"11px 4px",borderRadius:13,border:`2px solid ${txForm.type===v?T.acc:T.border}`,background:txForm.type===v?T.acc:"transparent",color:txForm.type===v?"#fff":T.txt2,fontWeight:600,fontSize:13,cursor:"pointer"}}>{l}</button>
+            <button key={v} onClick={()=>setTxForm(f=>({...f,type:v}))} style={{flex:1,padding:"11px 4px",borderRadius:12,border:`2px solid ${txForm.type===v?T.acc:T.border}`,background:txForm.type===v?T.acc:"transparent",color:txForm.type===v?"#fff":T.txt2,fontWeight:600,fontSize:13,cursor:"pointer"}}>{l}</button>
           ))}
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
@@ -1425,9 +1453,9 @@ function App(){
         </div>
         <div style={{display:"flex",gap:7,marginBottom:14}}>
           {[1,5,10,20,50].map(v=>(
-            <button key={v} onClick={()=>setTxForm(f=>({...f,amount:String(Math.round(((parseFloat(f.amount)||0)+v)*100)/100)}))} style={{flex:1,padding:"9px 0",borderRadius:11,border:`1.5px solid ${T.border}`,background:T.bg,color:T.txt,fontWeight:600,fontSize:14,cursor:"pointer"}}>+{v}</button>
+            <button key={v} onClick={()=>setTxForm(f=>({...f,amount:String(Math.round(((parseFloat(f.amount)||0)+v)*100)/100)}))} style={{flex:1,padding:"9px 0",borderRadius:12,border:`1.5px solid ${T.border}`,background:T.bg,color:T.txt,fontWeight:600,fontSize:14,cursor:"pointer"}}>+{v}</button>
           ))}
-          <button onClick={()=>setTxForm(f=>({...f,amount:""}))} style={{padding:"9px 12px",borderRadius:11,border:`1.5px solid ${T.border}`,background:T.bg,color:T.red,fontWeight:700,fontSize:14,cursor:"pointer"}}>C</button>
+          <button onClick={()=>setTxForm(f=>({...f,amount:""}))} style={{padding:"9px 12px",borderRadius:12,border:`1.5px solid ${T.border}`,background:T.bg,color:T.red,fontWeight:700,fontSize:14,cursor:"pointer"}}>C</button>
         </div>
         <div style={{marginBottom:14}}><Label text="Merchant / Payee"/><input type="text" placeholder="e.g. Kaufland, Apple Music…" value={txForm.merchant} onChange={e=>setTxForm(f=>({...f,merchant:e.target.value}))} style={inp}/></div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
@@ -1438,7 +1466,7 @@ function App(){
           }
         </div>
         {txForm.type==="expense"&&(
-          <div style={{background:T.bg,borderRadius:14,padding:"13px 14px",marginBottom:14}}>
+          <div style={{background:T.bg,borderRadius:12,padding:"13px 14px",marginBottom:14}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:txForm.isSplit?10:0}}>
               <div><div style={{fontWeight:600,fontSize:15,color:T.txt}}>Split with others</div><div style={{fontSize:12,color:T.txt2,marginTop:1}}>WG, friends, group expenses</div></div>
               <Toggle value={txForm.isSplit} onChange={v=>setTxForm(f=>({...f,isSplit:v}))} T={T}/>
@@ -1446,9 +1474,9 @@ function App(){
             {txForm.isSplit&&<div>
               <Label text="Number of people (including you)"/>
               <div style={{display:"flex",gap:8}}>
-                {[2,3,4,5,6].map(n=><button key={n} onClick={()=>setTxForm(f=>({...f,splitPeople:n}))} style={{flex:1,padding:"10px 0",borderRadius:11,border:`2px solid ${txForm.splitPeople===n?T.acc:T.border}`,background:txForm.splitPeople===n?T.acc:"transparent",color:txForm.splitPeople===n?"#fff":T.txt2,fontWeight:600,fontSize:15,cursor:"pointer"}}>{n}</button>)}
+                {[2,3,4,5,6].map(n=><button key={n} onClick={()=>setTxForm(f=>({...f,splitPeople:n}))} style={{flex:1,padding:"10px 0",borderRadius:12,border:`2px solid ${txForm.splitPeople===n?T.acc:T.border}`,background:txForm.splitPeople===n?T.acc:"transparent",color:txForm.splitPeople===n?"#fff":T.txt2,fontWeight:600,fontSize:15,cursor:"pointer"}}>{n}</button>)}
               </div>
-              {txForm.amount&&<div style={{marginTop:10,background:dark?"#002e14":"#d4f5df",borderRadius:11,padding:"10px 12px",display:"flex",justifyContent:"space-between"}}>
+              {txForm.amount&&<div style={{marginTop:10,background:dark?"#002e14":"#d4f5df",borderRadius:12,padding:"10px 12px",display:"flex",justifyContent:"space-between"}}>
                 <span style={{fontSize:13,color:dark?"#4ade80":"#16a34a"}}>Your share</span>
                 <span style={{fontWeight:700,fontSize:15,color:dark?"#30d158":"#15803d"}}>{fmt(parseFloat(txForm.amount)/(txForm.splitPeople||2))}</span>
               </div>}
@@ -1458,7 +1486,7 @@ function App(){
         <div style={{marginBottom:20}}><Label text="Notes (optional)"/><input type="text" placeholder="Any notes…" value={txForm.notes} onChange={e=>setTxForm(f=>({...f,notes:e.target.value}))} style={inp}/></div>
         {(()=>{
           const dis=!txForm.amount||!txForm.accountId||(txForm.type==="transfer"&&!txForm.toAccountId);
-          return <button onClick={doAddTx} disabled={dis} style={{display:"block",width:"100%",background:dis?T.txt3:T.acc,color:"#fff",border:"none",borderRadius:15,padding:17,fontWeight:700,fontSize:17,cursor:dis?"not-allowed":"pointer",marginBottom:4}}>{editId?"Save Changes":"Add Transaction"}</button>;
+          return <button onClick={doAddTx} disabled={dis} style={{display:"block",width:"100%",background:dis?T.txt3:T.acc,color:"#fff",border:"none",borderRadius:12,padding:17,fontWeight:700,fontSize:17,cursor:dis?"not-allowed":"pointer",marginBottom:4}}>{editId?"Save Changes":"Add Transaction"}</button>;
         })()}
       </Sheet>
 
@@ -1491,7 +1519,7 @@ function App(){
               {accs.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
             {debtForm.receivedInAccount&&(
-              <div style={{marginTop:8,background:dark?"#002e14":"#d4f5df",borderRadius:10,padding:"9px 12px",fontSize:13,color:dark?"#4ade80":"#16a34a",fontWeight:500}}>
+              <div style={{marginTop:8,background:dark?"#002e14":"#d4f5df",borderRadius:12,padding:"9px 12px",fontSize:13,color:dark?"#4ade80":"#16a34a",fontWeight:500}}>
                 ✓ Will add +{debtForm.totalAmount?fmt(parseFloat(debtForm.totalAmount)):"€0.00"} income to {accs.find(a=>a.id===debtForm.receivedInAccount)?.name} on {debtForm.date}
                 {parseFloat(debtForm.paidBack)>0&&<div style={{marginTop:4}}>And −{fmt(Math.min(parseFloat(debtForm.paidBack),parseFloat(debtForm.totalAmount)||0))} for prior repayment</div>}
               </div>
@@ -1499,8 +1527,8 @@ function App(){
           </div>
         )}
         <div style={{marginBottom:14}}><Label text="Description (optional)"/><input type="text" placeholder="e.g. for groceries, emergency…" value={debtForm.description} onChange={e=>setDebtForm(f=>({...f,description:e.target.value}))} style={inp}/></div>
-        <div style={{marginBottom:22}}><Label text="Color"/><input type="color" value={debtForm.color} onChange={e=>setDebtForm(f=>({...f,color:e.target.value}))} style={{width:"100%",height:52,border:`1.5px solid ${T.inpB}`,borderRadius:13,background:T.inp,cursor:"pointer",padding:4,display:"block"}}/></div>
-        <button onClick={doAddDebt} disabled={!debtForm.personName||!debtForm.totalAmount} style={{display:"block",width:"100%",background:!debtForm.personName||!debtForm.totalAmount?T.txt3:T.acc,color:"#fff",border:"none",borderRadius:15,padding:17,fontWeight:700,fontSize:17,cursor:!debtForm.personName||!debtForm.totalAmount?"not-allowed":"pointer",marginBottom:4}}>
+        <div style={{marginBottom:22}}><Label text="Color"/><input type="color" value={debtForm.color} onChange={e=>setDebtForm(f=>({...f,color:e.target.value}))} style={{width:"100%",height:52,border:`1.5px solid ${T.inpB}`,borderRadius:12,background:T.inp,cursor:"pointer",padding:4,display:"block"}}/></div>
+        <button onClick={doAddDebt} disabled={!debtForm.personName||!debtForm.totalAmount} style={{display:"block",width:"100%",background:!debtForm.personName||!debtForm.totalAmount?T.txt3:T.acc,color:"#fff",border:"none",borderRadius:12,padding:17,fontWeight:700,fontSize:17,cursor:!debtForm.personName||!debtForm.totalAmount?"not-allowed":"pointer",marginBottom:4}}>
           {editId?"Save Changes":"Add Debt"}
         </button>
       </Sheet>
@@ -1513,8 +1541,8 @@ function App(){
           const remaining=debt.totalAmount-debt.paidBack;
           const chips=[10,20,50].filter(v=>v<remaining);
           return(<>
-            <div style={{background:T.bg,borderRadius:14,padding:"12px 14px",marginBottom:16,display:"flex",alignItems:"center",gap:12}}>
-              <div style={{width:48,height:48,borderRadius:14,background:debt.color,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:22,flexShrink:0}}>{debt.personName[0]?.toUpperCase()}</div>
+            <div style={{background:T.bg,borderRadius:12,padding:"12px 14px",marginBottom:16,display:"flex",alignItems:"center",gap:12}}>
+              <div style={{width:48,height:48,borderRadius:12,background:debt.color,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:22,flexShrink:0}}>{debt.personName[0]?.toUpperCase()}</div>
               <div><div style={{fontWeight:700,fontSize:16,color:T.txt}}>{debt.personName}</div><div style={{fontSize:13,color:T.red,fontWeight:600}}>{fmt(remaining)} remaining</div></div>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
@@ -1522,13 +1550,13 @@ function App(){
               <div><Label text="Date"/><input type="date" value={repayForm.date} onChange={e=>setRepayForm(f=>({...f,date:e.target.value}))} style={{...inp,colorScheme:dark?"dark":"light"}}/></div>
             </div>
             <div style={{display:"flex",gap:7,marginBottom:14}}>
-              {chips.map(v=><button key={v} onClick={()=>setRepayForm(f=>({...f,amount:String(v)}))} style={{flex:1,padding:"9px 0",borderRadius:11,border:`1.5px solid ${T.border}`,background:T.bg,color:T.txt,fontWeight:600,fontSize:14,cursor:"pointer"}}>€{v}</button>)}
-              {remaining>20&&<button onClick={()=>setRepayForm(f=>({...f,amount:String((Math.ceil(remaining/2*100)/100).toFixed(2))}))} style={{flex:1,padding:"9px 0",borderRadius:11,border:`1.5px solid ${T.border}`,background:T.bg,color:T.txt,fontWeight:600,fontSize:14,cursor:"pointer"}}>Half</button>}
-              <button onClick={()=>setRepayForm(f=>({...f,amount:String(remaining.toFixed(2))}))} style={{flex:1,padding:"9px 0",borderRadius:11,border:`2px solid ${T.acc}`,background:T.acc+"18",color:T.acc,fontWeight:700,fontSize:14,cursor:"pointer"}}>Full</button>
+              {chips.map(v=><button key={v} onClick={()=>setRepayForm(f=>({...f,amount:String(v)}))} style={{flex:1,padding:"9px 0",borderRadius:12,border:`1.5px solid ${T.border}`,background:T.bg,color:T.txt,fontWeight:600,fontSize:14,cursor:"pointer"}}>€{v}</button>)}
+              {remaining>20&&<button onClick={()=>setRepayForm(f=>({...f,amount:String((Math.ceil(remaining/2*100)/100).toFixed(2))}))} style={{flex:1,padding:"9px 0",borderRadius:12,border:`1.5px solid ${T.border}`,background:T.bg,color:T.txt,fontWeight:600,fontSize:14,cursor:"pointer"}}>Half</button>}
+              <button onClick={()=>setRepayForm(f=>({...f,amount:String(remaining.toFixed(2))}))} style={{flex:1,padding:"9px 0",borderRadius:12,border:`2px solid ${T.acc}`,background:T.acc+"18",color:T.acc,fontWeight:700,fontSize:14,cursor:"pointer"}}>Full</button>
             </div>
             <div style={{marginBottom:14}}><Label text="From Account"/><select value={repayForm.accountId} onChange={e=>setRepayForm(f=>({...f,accountId:e.target.value}))} style={inp}><option value="">Select…</option>{accs.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></div>
             <div style={{marginBottom:20}}><Label text="Notes (optional)"/><input type="text" placeholder="Any notes…" value={repayForm.notes} onChange={e=>setRepayForm(f=>({...f,notes:e.target.value}))} style={inp}/></div>
-            <button onClick={doRepay} disabled={!repayForm.amount||!repayForm.accountId} style={{display:"block",width:"100%",background:!repayForm.amount||!repayForm.accountId?T.txt3:T.acc,color:"#fff",border:"none",borderRadius:15,padding:17,fontWeight:700,fontSize:17,cursor:!repayForm.amount||!repayForm.accountId?"not-allowed":"pointer",marginBottom:4}}>Log Repayment</button>
+            <button onClick={doRepay} disabled={!repayForm.amount||!repayForm.accountId} style={{display:"block",width:"100%",background:!repayForm.amount||!repayForm.accountId?T.txt3:T.acc,color:"#fff",border:"none",borderRadius:12,padding:17,fontWeight:700,fontSize:17,cursor:!repayForm.amount||!repayForm.accountId?"not-allowed":"pointer",marginBottom:4}}>Log Repayment</button>
           </>);
         })()}
       </Sheet>
@@ -1537,16 +1565,16 @@ function App(){
       <Sheet open={modal==="acc"} onClose={closeM} title={editId?"Edit Account":"New Account"} T={T}>
         <div style={{marginBottom:14}}><Label text="Account Name"/><input type="text" placeholder="e.g. N26, Cash, Savings…" value={accForm.name} onChange={e=>setAccForm(f=>({...f,name:e.target.value}))} style={inp}/></div>
         <div style={{marginBottom:14}}><Label text="Starting Balance (€)"/><input type="number" step="0.01" placeholder="0.00" value={accForm.ib} onChange={e=>setAccForm(f=>({...f,ib:e.target.value}))} style={inp}/></div>
-        <div style={{marginBottom:22}}><Label text="Color"/><input type="color" value={accForm.color} onChange={e=>setAccForm(f=>({...f,color:e.target.value}))} style={{width:"100%",height:52,border:`1.5px solid ${T.inpB}`,borderRadius:13,background:T.inp,cursor:"pointer",padding:4,display:"block"}}/></div>
-        <button onClick={doAddAcc} disabled={!accForm.name} style={{display:"block",width:"100%",background:!accForm.name?T.txt3:T.acc,color:"#fff",border:"none",borderRadius:15,padding:17,fontWeight:700,fontSize:17,cursor:!accForm.name?"not-allowed":"pointer",marginBottom:4}}>{editId?"Save Changes":"Add Account"}</button>
+        <div style={{marginBottom:22}}><Label text="Color"/><input type="color" value={accForm.color} onChange={e=>setAccForm(f=>({...f,color:e.target.value}))} style={{width:"100%",height:52,border:`1.5px solid ${T.inpB}`,borderRadius:12,background:T.inp,cursor:"pointer",padding:4,display:"block"}}/></div>
+        <button onClick={doAddAcc} disabled={!accForm.name} style={{display:"block",width:"100%",background:!accForm.name?T.txt3:T.acc,color:"#fff",border:"none",borderRadius:12,padding:17,fontWeight:700,fontSize:17,cursor:!accForm.name?"not-allowed":"pointer",marginBottom:4}}>{editId?"Save Changes":"Add Account"}</button>
       </Sheet>
 
       {/* ── CATEGORY SHEET ── */}
       <Sheet open={modal==="cat"} onClose={closeM} title={editId?"Edit Category":"New Category"} T={T}>
         <div style={{marginBottom:14}}><Label text="Category Name"/><input type="text" placeholder="e.g. Dining, Groceries…" value={catForm.label} onChange={e=>setCatForm(f=>({...f,label:e.target.value}))} style={inp}/></div>
         <div style={{marginBottom:14}}><Label text="Icon (emoji)"/><input type="text" placeholder="🛒" value={catForm.icon} onChange={e=>setCatForm(f=>({...f,icon:e.target.value}))} style={inp}/></div>
-        <div style={{marginBottom:22}}><Label text="Color"/><input type="color" value={catForm.color} onChange={e=>setCatForm(f=>({...f,color:e.target.value}))} style={{width:"100%",height:52,border:`1.5px solid ${T.inpB}`,borderRadius:13,background:T.inp,cursor:"pointer",padding:4,display:"block"}}/></div>
-        <button onClick={doAddCat} disabled={!catForm.label} style={{display:"block",width:"100%",background:!catForm.label?T.txt3:T.acc,color:"#fff",border:"none",borderRadius:15,padding:17,fontWeight:700,fontSize:17,cursor:!catForm.label?"not-allowed":"pointer",marginBottom:4}}>{editId?"Save Changes":"Save Category"}</button>
+        <div style={{marginBottom:22}}><Label text="Color"/><input type="color" value={catForm.color} onChange={e=>setCatForm(f=>({...f,color:e.target.value}))} style={{width:"100%",height:52,border:`1.5px solid ${T.inpB}`,borderRadius:12,background:T.inp,cursor:"pointer",padding:4,display:"block"}}/></div>
+        <button onClick={doAddCat} disabled={!catForm.label} style={{display:"block",width:"100%",background:!catForm.label?T.txt3:T.acc,color:"#fff",border:"none",borderRadius:12,padding:17,fontWeight:700,fontSize:17,cursor:!catForm.label?"not-allowed":"pointer",marginBottom:4}}>{editId?"Save Changes":"Save Category"}</button>
       </Sheet>
 
       {/* ── GOAL SHEET ── */}
@@ -1557,14 +1585,14 @@ function App(){
           <div><Label text="Saved so far (€)"/><input type="number" step="1" min="0" placeholder="0" value={goalForm.savedAmount} onChange={e=>setGoalForm(f=>({...f,savedAmount:e.target.value}))} style={inp}/></div>
         </div>
         <div style={{marginBottom:14}}><Label text="Icon"/><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{GOAL_ICONS.map(ic=><button key={ic} onClick={()=>setGoalForm(f=>({...f,icon:ic}))} style={{width:44,height:44,borderRadius:12,border:`2px solid ${goalForm.icon===ic?T.acc:T.border}`,background:goalForm.icon===ic?T.acc+"18":"transparent",fontSize:22,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>{ic}</button>)}</div></div>
-        <div style={{marginBottom:22}}><Label text="Color"/><input type="color" value={goalForm.color} onChange={e=>setGoalForm(f=>({...f,color:e.target.value}))} style={{width:"100%",height:52,border:`1.5px solid ${T.inpB}`,borderRadius:13,background:T.inp,cursor:"pointer",padding:4,display:"block"}}/></div>
-        <button onClick={doAddGoal} disabled={!goalForm.name||!goalForm.targetAmount} style={{display:"block",width:"100%",background:!goalForm.name||!goalForm.targetAmount?T.txt3:T.acc,color:"#fff",border:"none",borderRadius:15,padding:17,fontWeight:700,fontSize:17,cursor:!goalForm.name||!goalForm.targetAmount?"not-allowed":"pointer",marginBottom:4}}>{editId?"Save Changes":"Create Goal"}</button>
+        <div style={{marginBottom:22}}><Label text="Color"/><input type="color" value={goalForm.color} onChange={e=>setGoalForm(f=>({...f,color:e.target.value}))} style={{width:"100%",height:52,border:`1.5px solid ${T.inpB}`,borderRadius:12,background:T.inp,cursor:"pointer",padding:4,display:"block"}}/></div>
+        <button onClick={doAddGoal} disabled={!goalForm.name||!goalForm.targetAmount} style={{display:"block",width:"100%",background:!goalForm.name||!goalForm.targetAmount?T.txt3:T.acc,color:"#fff",border:"none",borderRadius:12,padding:17,fontWeight:700,fontSize:17,cursor:!goalForm.name||!goalForm.targetAmount?"not-allowed":"pointer",marginBottom:4}}>{editId?"Save Changes":"Create Goal"}</button>
       </Sheet>
 
       {/* ── RECURRING SHEET ── */}
       <Sheet open={modal==="rec"} onClose={closeM} title={editId?"Edit Recurring":"New Recurring Transaction"} T={T}>
         <div style={{display:"flex",gap:8,marginBottom:14}}>
-          {[["expense","💸 Expense"],["income","💰 Income"]].map(([v,l])=><button key={v} onClick={()=>setRecForm(f=>({...f,type:v}))} style={{flex:1,padding:"11px 4px",borderRadius:13,border:`2px solid ${recForm.type===v?T.acc:T.border}`,background:recForm.type===v?T.acc:"transparent",color:recForm.type===v?"#fff":T.txt2,fontWeight:600,fontSize:14,cursor:"pointer"}}>{l}</button>)}
+          {[["expense","💸 Expense"],["income","💰 Income"]].map(([v,l])=><button key={v} onClick={()=>setRecForm(f=>({...f,type:v}))} style={{flex:1,padding:"11px 4px",borderRadius:12,border:`2px solid ${recForm.type===v?T.acc:T.border}`,background:recForm.type===v?T.acc:"transparent",color:recForm.type===v?"#fff":T.txt2,fontWeight:600,fontSize:14,cursor:"pointer"}}>{l}</button>)}
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
           <div><Label text="Amount (€)"/><input type="number" step="0.01" min="0" placeholder="0.00" value={recForm.amount} onChange={e=>setRecForm(f=>({...f,amount:e.target.value}))} style={inp}/></div>
@@ -1576,7 +1604,7 @@ function App(){
           <div><Label text="Category"/><select value={recForm.category} onChange={e=>setRecForm(f=>({...f,category:e.target.value}))} style={inp}>{cats.map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}</select></div>
         </div>
         <div style={{marginBottom:20}}><Label text="Notes (optional)"/><input type="text" placeholder="Any notes…" value={recForm.notes} onChange={e=>setRecForm(f=>({...f,notes:e.target.value}))} style={inp}/></div>
-        <button onClick={doAddRec} disabled={!recForm.merchant||!recForm.amount||!recForm.accountId} style={{display:"block",width:"100%",background:!recForm.merchant||!recForm.amount||!recForm.accountId?T.txt3:T.acc,color:"#fff",border:"none",borderRadius:15,padding:17,fontWeight:700,fontSize:17,cursor:!recForm.merchant||!recForm.amount||!recForm.accountId?"not-allowed":"pointer",marginBottom:4}}>{editId?"Save Changes":"Save Recurring"}</button>
+        <button onClick={doAddRec} disabled={!recForm.merchant||!recForm.amount||!recForm.accountId} style={{display:"block",width:"100%",background:!recForm.merchant||!recForm.amount||!recForm.accountId?T.txt3:T.acc,color:"#fff",border:"none",borderRadius:12,padding:17,fontWeight:700,fontSize:17,cursor:!recForm.merchant||!recForm.amount||!recForm.accountId?"not-allowed":"pointer",marginBottom:4}}>{editId?"Save Changes":"Save Recurring"}</button>
       </Sheet>
 
       {/* ── NOTIFICATIONS SHEET ── */}
@@ -1588,8 +1616,8 @@ function App(){
               const cc=({blue:T.acc,red:T.red,green:T.green})[n.tone]||T.acc;
               return(
                 <button key={n.k} onClick={()=>{sdn(prev=>[...prev,n.k]);setTab(n.tab);if(n.ana)setAnaView(n.ana);if(n.pv)setPeopleView(n.pv);closeM();}} className="mt-press"
-                  style={{display:"flex",alignItems:"center",gap:12,background:T.bg,border:`1px solid ${T.border}`,borderRadius:14,padding:"13px 14px",cursor:"pointer",textAlign:"left",width:"100%"}}>
-                  <div style={{width:38,height:38,borderRadius:11,background:cc+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{n.icon}</div>
+                  style={{display:"flex",alignItems:"center",gap:12,background:T.bg,border:`1px solid ${T.border}`,borderRadius:12,padding:"13px 14px",cursor:"pointer",textAlign:"left",width:"100%"}}>
+                  <div style={{width:38,height:38,borderRadius:12,background:cc+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{n.icon}</div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontWeight:600,fontSize:14,color:T.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{n.title}</div>
                     <div style={{fontSize:12,color:T.txt2,marginTop:1}}>{n.sub}</div>
@@ -1607,35 +1635,35 @@ function App(){
         <input type="file" ref={fileRef} accept=".json" style={{display:"none"}} onChange={doImport}/>
         <div style={{marginBottom:10}}><Label text="Data Backup"/></div>
         <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
-          <button onClick={doExport} style={{display:"flex",alignItems:"center",gap:12,background:T.bg,border:`1.5px solid ${T.border}`,borderRadius:14,padding:"15px 16px",cursor:"pointer",textAlign:"left"}}>
+          <button onClick={doExport} style={{display:"flex",alignItems:"center",gap:12,background:T.bg,border:`1.5px solid ${T.border}`,borderRadius:12,padding:"15px 16px",cursor:"pointer",textAlign:"left"}}>
             <div style={{width:40,height:40,borderRadius:12,background:T.acc+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{I.download(T.acc)}</div>
             <div><div style={{fontWeight:600,fontSize:15,color:T.txt}}>Export backup</div><div style={{fontSize:12,color:T.txt2,marginTop:1}}>Download all data as JSON</div></div>
           </button>
-          <button onClick={()=>fileRef.current?.click()} style={{display:"flex",alignItems:"center",gap:12,background:T.bg,border:`1.5px solid ${T.border}`,borderRadius:14,padding:"15px 16px",cursor:"pointer",textAlign:"left"}}>
+          <button onClick={()=>fileRef.current?.click()} style={{display:"flex",alignItems:"center",gap:12,background:T.bg,border:`1.5px solid ${T.border}`,borderRadius:12,padding:"15px 16px",cursor:"pointer",textAlign:"left"}}>
             <div style={{width:40,height:40,borderRadius:12,background:T.green+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{I.upload(T.green)}</div>
             <div><div style={{fontWeight:600,fontSize:15,color:T.txt}}>Restore backup</div><div style={{fontSize:12,color:T.txt2,marginTop:1}}>Import a JSON backup file</div></div>
           </button>
-          <button onClick={exportCSV} style={{display:"flex",alignItems:"center",gap:12,background:T.bg,border:`1.5px solid ${T.border}`,borderRadius:14,padding:"15px 16px",cursor:"pointer",textAlign:"left"}}>
+          <button onClick={exportCSV} style={{display:"flex",alignItems:"center",gap:12,background:T.bg,border:`1.5px solid ${T.border}`,borderRadius:12,padding:"15px 16px",cursor:"pointer",textAlign:"left"}}>
             <div style={{width:40,height:40,borderRadius:12,background:T.border,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{I.download(T.txt2)}</div>
             <div><div style={{fontWeight:600,fontSize:15,color:T.txt}}>Export CSV</div><div style={{fontSize:12,color:T.txt2,marginTop:1}}>Last 200 transactions</div></div>
           </button>
         </div>
         <div style={{display:"flex",gap:10,marginBottom:16}}>
           <button onClick={()=>{setTab("accs");closeM();}} style={{flex:1,display:"flex",alignItems:"center",gap:10,background:T.card,border:`1.5px solid ${T.border}`,borderRadius:12,padding:"12px 14px",cursor:"pointer",textAlign:"left"}}>
-            <div style={{width:36,height:36,borderRadius:10,background:T.acc+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{I.wallet(T.acc)}</div>
+            <div style={{width:36,height:36,borderRadius:12,background:T.acc+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{I.wallet(T.acc)}</div>
             <div><div style={{fontWeight:600,fontSize:14,color:T.txt}}>Accounts</div><div style={{fontSize:12,color:T.txt2,marginTop:2}}>Manage bank accounts</div></div>
           </button>
           <button onClick={()=>{setTab("categories");closeM();}} style={{flex:1,display:"flex",alignItems:"center",gap:10,background:T.card,border:`1.5px solid ${T.border}`,borderRadius:12,padding:"12px 14px",cursor:"pointer",textAlign:"left"}}>
-            <div style={{width:36,height:36,borderRadius:10,background:T.acc+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{I.goal(T.acc)}</div>
+            <div style={{width:36,height:36,borderRadius:12,background:T.acc+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{I.goal(T.acc)}</div>
             <div><div style={{fontWeight:600,fontSize:14,color:T.txt}}>Categories</div><div style={{fontSize:12,color:T.txt2,marginTop:2}}>Manage categories</div></div>
           </button>
         </div>
-        <button onClick={()=>{setTab("stats");setAnaView("budget");closeM();}} style={{display:"flex",alignItems:"center",gap:12,width:"100%",background:T.bg,border:`1.5px solid ${T.border}`,borderRadius:14,padding:"15px 16px",cursor:"pointer",textAlign:"left",marginBottom:20}}>
+        <button onClick={()=>{setTab("stats");setAnaView("budget");closeM();}} style={{display:"flex",alignItems:"center",gap:12,width:"100%",background:T.bg,border:`1.5px solid ${T.border}`,borderRadius:12,padding:"15px 16px",cursor:"pointer",textAlign:"left",marginBottom:20}}>
           <div style={{width:40,height:40,borderRadius:12,background:T.acc+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{I.budget(T.acc,20)}</div>
           <div><div style={{fontWeight:600,fontSize:15,color:T.txt}}>Monthly Budgets</div><div style={{fontSize:12,color:T.txt2,marginTop:1}}>Set limits per category</div></div>
         </button>
         <div style={{marginBottom:10}}><Label text="Preferences"/></div>
-        <div style={{background:T.bg,borderRadius:14,overflow:"hidden",marginBottom:20}}>
+        <div style={{background:T.bg,borderRadius:12,overflow:"hidden",marginBottom:20}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 16px"}}>
             <div style={{display:"flex",alignItems:"center",gap:12}}>{I.lock(T.acc,20)}<div><div style={{fontWeight:600,fontSize:15,color:T.txt}}>App Lock</div><div style={{fontSize:12,color:T.txt2,marginTop:1}}>{pin?"Enabled":"4-digit passcode"}</div></div></div>
             <Toggle value={!!pin} onChange={v=>{v?setPinFlow("set"):setPinFlow("disable");}} T={T}/>
@@ -1647,7 +1675,7 @@ function App(){
           </div>
         </div>
         <div style={{marginBottom:10}}><Label text="Stats"/></div>
-        <div style={{background:T.bg,borderRadius:14,padding:"14px 16px",display:"flex",flexDirection:"column",gap:10,marginBottom:16}}>
+        <div style={{background:T.bg,borderRadius:12,padding:"14px 16px",display:"flex",flexDirection:"column",gap:10,marginBottom:16}}>
           {[["Transactions",txs.length],["Accounts",accs.length],["Goals",goals.length],["Debts",debts.length],["Recurring",recurring.length]].map(([l,v])=>(
             <div key={l} style={{display:"flex",justifyContent:"space-between"}}>
               <span style={{fontSize:14,color:T.txt2}}>{l}</span>
@@ -1655,10 +1683,10 @@ function App(){
             </div>
           ))}
         </div>
-        <div style={{padding:"12px 16px",background:dark?"#2d0000":"#ffdede",borderRadius:14}}>
+        <div style={{padding:"12px 16px",background:dark?"#2d0000":"#ffdede",borderRadius:12}}>
           <div style={{fontWeight:600,fontSize:14,color:dark?"#ff453a":"#c0392b",marginBottom:4}}>⚠️ Danger zone</div>
           <div style={{fontSize:12,color:dark?"#ff6b6b":"#7f1d1d",marginBottom:10}}>Permanently deletes all your data.</div>
-          <button onClick={()=>{if(confirm("Delete ALL data?")){sa(DEFACCS);st([]);sg([]);sr([]);sd([]);closeM();showToast("All data cleared",false);}}} style={{background:dark?"#ff453a":"#c0392b",color:"#fff",border:"none",borderRadius:11,padding:"10px 16px",fontWeight:600,fontSize:14,cursor:"pointer"}}>Clear all data</button>
+          <button onClick={()=>{if(confirm("Delete ALL data?")){sa(DEFACCS);st([]);sg([]);sr([]);sd([]);closeM();showToast("All data cleared",false);}}} style={{background:dark?"#ff453a":"#c0392b",color:"#fff",border:"none",borderRadius:12,padding:"10px 16px",fontWeight:600,fontSize:14,cursor:"pointer"}}>Clear all data</button>
         </div>
         <div style={{textAlign:"center",fontSize:12,color:T.txt3,marginTop:14}}>MoneyTrack {window.MT_VERSION}</div>
         <div style={{height:16}}/>
