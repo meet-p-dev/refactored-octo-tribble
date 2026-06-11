@@ -36,11 +36,12 @@ select{-webkit-appearance:none}
 </style>
 </head>
 <body>
-<div id="root"></div>
+<div id="root"><div style="font-family:-apple-system,sans-serif;padding:40px 24px;text-align:center;color:#8e8e93;font-size:15px;line-height:1.6">This dev version needs the local server.<br>Run <b>python3 -m http.server 8123</b> here and open <b>http://127.0.0.1:8123/</b><br><br>To use the app directly, open <b>moneytrack.html</b> instead.</div></div>
+<script>window.MT_VERSION="V7.3";</script>
 <script type="text/babel">
 const {useState,useEffect,useMemo,useRef}=React;
 
-const CATS=[
+window.CATS=[
   {id:"groceries",label:"Groceries",icon:"🛒",color:"#4ade80"},
   {id:"dining",label:"Dining",icon:"🍴",color:"#fb923c"},
   {id:"subscr",label:"Subscriptions",icon:"📱",color:"#a78bfa"},
@@ -53,29 +54,29 @@ const CATS=[
   {id:"rent",label:"Rent / Bills",icon:"🏠",color:"#ef4444"},
   {id:"other",label:"Other",icon:"📦",color:"#9ca3af"},
 ];
-const DEFACCS=[
+window.DEFACCS=[
   {id:"sparkasse",name:"Sparkasse",color:"#e11d48",ib:0},
   {id:"revolut",name:"Revolut",color:"#6d28d9",ib:0},
   {id:"revolut-savings",name:"Revolut Savings",color:"#7c3aed",ib:0},
   {id:"paypal",name:"PayPal",color:"#1d4ed8",ib:0},
   {id:"friend-loan",name:"Friend (Loan)",color:"#059669",ib:0},
 ];
-const LT={bg:"#f2f2f7",card:"#fff",cardH:"#f0f0f5",border:"#e5e7eb",txt:"#000",txt2:"#6b7280",txt3:"#aeaeb2",inp:"#fff",inpB:"#d1d5db",acc:"#007aff",green:"#34c759",red:"#ff3b30",cG:"#34c759",cR:"#ff3b30"};
-const DK={bg:"#000",card:"#1c1c1e",cardH:"#2c2c2e",border:"#38383a",txt:"#fff",txt2:"#8e8e93",txt3:"#48484a",inp:"#2c2c2e",inpB:"#48484a",acc:"#0a84ff",green:"#30d158",red:"#ff453a",cG:"#30d158",cR:"#ff453a"};
+window.LT={bg:"#f2f2f7",card:"#fff",cardH:"#f0f0f5",border:"#e5e7eb",txt:"#000",txt2:"#6b7280",txt3:"#aeaeb2",inp:"#fff",inpB:"#d1d5db",acc:"#007aff",green:"#34c759",red:"#ff3b30",cG:"#34c759",cR:"#ff3b30"};
+window.DK={bg:"#000",card:"#1c1c1e",cardH:"#2c2c2e",border:"#38383a",txt:"#fff",txt2:"#8e8e93",txt3:"#48484a",inp:"#2c2c2e",inpB:"#48484a",acc:"#0a84ff",green:"#30d158",red:"#ff453a",cG:"#30d158",cR:"#ff453a"};
 
-const LS={
+window.LS={
   g:k=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch{return null}},
   s:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
 };
-const fmt=n=>new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR"}).format(n||0);
-const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2);
-const tod=()=>new Date().toISOString().slice(0,10);
+window.fmt=n=>new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR"}).format(n||0);
+window.uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2);
+window.tod=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;};
 // personal share helper — used everywhere for consistent expense amounts
-const personalAmt=t=>{
+window.personalAmt=t=>{
   const v=parseFloat(t.amount)||0;
   return t.isSplit&&t.type==="expense"?v/Math.max(t.splitPeople||1,1):v;
 };
-const haptic=(ms=10)=>{
+window.haptic=(ms=10)=>{
   try{
     if(window.__mtHaptics===false)return;
     if(navigator.vibrate){navigator.vibrate(ms);return;}
@@ -88,7 +89,7 @@ const haptic=(ms=10)=>{
   }catch{}
 };
 
-const I={
+window.I={
   home:c=><svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d="M3 12L12 4l9 8"/><path d="M5 10.5V20h5v-5h4v5h5V10.5"/></svg>,
   list:c=><svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.7} strokeLinecap="round"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill={c} stroke="none"/><circle cx="4" cy="12" r="1.5" fill={c} stroke="none"/><circle cx="4" cy="18" r="1.5" fill={c} stroke="none"/></svg>,
   people:c=><svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="7" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="18" cy="8" r="2.5"/><path d="M21 20c0-2.8-1.9-5-4.5-5.5"/></svg>,
@@ -114,6 +115,9 @@ const I={
   spark:(c,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l1.8 4.7L18.5 9 14 11l-2 4.5L10 11 5.5 9l4.7-1.3z"/><circle cx="18.5" cy="17.5" r="1.5"/><circle cx="5" cy="16" r="1"/></svg>,
   flame:(c,s=16)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d="M12 2s5 4 5 9a5 5 0 01-10 0c0-1.5.6-2.8 1.5-3.8C8.8 8 9 9.5 10 10c0-2 .5-5 2-8z"/></svg>,
 };
+
+
+window.MT_VERSION=window.MT_VERSION||"dev";
 
 function MiniChart({data,T,fmt:f}){
   const [sel,setSel]=useState(data.length-1);
@@ -244,6 +248,7 @@ function PinLock({T,mode,storedPin,onDone,onCancel}){
   );
 }
 
+
 function App(){
   const sysDark=window.matchMedia?.("(prefers-color-scheme:dark)").matches??false;
   const [accs,setAccs]           =useState([]);
@@ -276,7 +281,7 @@ function App(){
   const [fabSide,setFabSide]     =useState("right");
   const [fabTop,setFabTop]       =useState(null);
   const [fabDrag,setFabDrag]     =useState(null);
-  const [calMonth,setCalMonth]   =useState(()=>new Date().toISOString().slice(0,7));
+  const [calMonth,setCalMonth]   =useState(()=>tod().slice(0,7));
   const [peopleView,setPeopleView]=useState("splits");
   const fileRef=useRef();
   const T=dark?DK:LT;
@@ -380,7 +385,7 @@ function App(){
 
   const mLbl=new Date().toLocaleString("default",{month:"long"});
   const now0=new Date();
-  const monthKey=now0.toISOString().slice(0,7);
+  const monthKey=tod().slice(0,7);
   const daysInMonth=new Date(now0.getFullYear(),now0.getMonth()+1,0).getDate();
   const dayOfMonth=now0.getDate();
   const daysLeft=Math.max(daysInMonth-dayOfMonth+1,1);
@@ -502,13 +507,17 @@ function App(){
     const {_settleIds,...cleanForm}=txForm;
     const settleIds=_settleIds||[];
     const tx={...cleanForm,id:editId||uid(),amount:parseFloat(txForm.amount),splitPeople:txForm.isSplit?parseInt(txForm.splitPeople)||2:1};
+    const oldTx=editId?txs.find(t=>t.id===editId):null;
     const base=editId?txs.map(t=>t.id===editId?tx:t):[tx,...txs];
     const newTxs=settleIds.length?base.map(t=>settleIds.includes(t.id)?{...t,splitSettled:true}:t):base;
     st(newTxs);
     // FIX: only reset split banner for split transactions
     if(tx.isSplit){setSplitBannerSeen(false);LS.s("mt-split-banner",false);}
     try{localStorage.setItem("mt-last-account",tx.accountId);localStorage.setItem("mt-last-category",tx.category);}catch{}
-    showToast(editId?"Transaction updated":"Transaction added",true,()=>st(prev=>prev.filter(t=>t.id!==tx.id)));
+    showToast(editId?"Transaction updated":"Transaction added",true,()=>st(prev=>{
+      const reverted=oldTx?prev.map(t=>t.id===tx.id?oldTx:t):prev.filter(t=>t.id!==tx.id);
+      return settleIds.length?reverted.map(t=>settleIds.includes(t.id)?{...t,splitSettled:false}:t):reverted;
+    }));
     closeM();
   };
 
@@ -655,7 +664,7 @@ function App(){
   useEffect(()=>{
     if(!ready)return;
     const trigger=()=>{
-      const today=new Date(),day=today.getDate(),todayStr=today.toISOString().slice(0,10);
+      const today=new Date(),day=today.getDate(),todayStr=tod();
       sr(prevRec=>{
         const newTxs=[],ids=new Set();
         prevRec.forEach(r=>{
@@ -677,7 +686,7 @@ function App(){
   },[ready]);
 
   const doExport=()=>{
-    const data={accs,cats,txs,goals,recurring,debts,exportedAt:new Date().toISOString(),version:"2.3"};
+    const data={accs,cats,txs,goals,recurring,debts,budgets,exportedAt:new Date().toISOString(),version:"2.4"};
     const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
     const url=URL.createObjectURL(blob);
     const a=document.createElement("a");a.href=url;a.download=`moneytrack-backup-${tod()}.json`;a.click();URL.revokeObjectURL(url);
@@ -690,7 +699,7 @@ function App(){
       try{
         const data=JSON.parse(ev.target.result);
         if(data.accs)sa(data.accs);if(data.cats)sc(data.cats);if(data.txs)st(data.txs);
-        if(data.goals)sg(data.goals);if(data.recurring)sr(data.recurring);if(data.debts)sd(data.debts);
+        if(data.goals)sg(data.goals);if(data.recurring)sr(data.recurring);if(data.debts)sd(data.debts);if(data.budgets)sb(data.budgets);
         showToast("Data restored!");closeM();
       }catch{showToast("Invalid backup file",false);}
     };
@@ -1338,7 +1347,7 @@ function App(){
             const first=new Date(yy,mm-1,1),startDow=(first.getDay()+6)%7,dim=new Date(yy,mm,0).getDate();
             const vals=Object.values(calData),maxDay=Math.max(...vals,1),monthTotal=vals.reduce((s,v)=>s+v,0);
             const activeDays=vals.filter(v=>v>0).length,busiest=Object.entries(calData).sort((a,b)=>b[1]-a[1])[0];
-            const curKey=new Date().toISOString().slice(0,7);
+            const curKey=tod().slice(0,7);
             const shift=delta=>{const d=new Date(yy,mm-1+delta,1);const nk=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;if(nk<=curKey)setCalMonth(nk);};
             const cells=[];for(let i=0;i<startDow;i++)cells.push(null);for(let d=1;d<=dim;d++)cells.push(d);
             const atMax=calMonth>=curKey;
@@ -1651,6 +1660,7 @@ function App(){
           <div style={{fontSize:12,color:dark?"#ff6b6b":"#7f1d1d",marginBottom:10}}>Permanently deletes all your data.</div>
           <button onClick={()=>{if(confirm("Delete ALL data?")){sa(DEFACCS);st([]);sg([]);sr([]);sd([]);closeM();showToast("All data cleared",false);}}} style={{background:dark?"#ff453a":"#c0392b",color:"#fff",border:"none",borderRadius:11,padding:"10px 16px",fontWeight:600,fontSize:14,cursor:"pointer"}}>Clear all data</button>
         </div>
+        <div style={{textAlign:"center",fontSize:12,color:T.txt3,marginTop:14}}>MoneyTrack {window.MT_VERSION}</div>
         <div style={{height:16}}/>
       </Sheet>
 
