@@ -1,5 +1,19 @@
 # MoneyTrack Changelog
 
+## V8.1 — 2026-06-11 · iPhone bug-fix round (from your screen recordings)
+- **Fixed:** Insights cards were cut off at the left screen edge — now aligned
+  with everything else.
+- **Fixed:** last items on every tab no longer hide behind the bottom panel —
+  there's now proper scroll room above it.
+- **Fixed:** the + button can no longer be dragged over the bottom panel or the
+  top header — it stays between them and glides to the left or right edge.
+- **Fixed:** tall sheets (like Settings) no longer slide under the iPhone
+  status bar/clock.
+- **Fixed:** switching tabs/views showed a blank screen before content "popped
+  in" — entrance animation is now ~4× faster and barely blocks anything.
+- **Improved:** "Projected spend" now uses your *typical* daily pace (median),
+  so one big one-off expense no longer explodes the forecast into nonsense.
+
 ## V8.0 — 2026-06-11 · The big UI polish
 - **New look, same features:** balance is now a large floating number (the
   hero of the Home screen), header slimmed to quiet icons, Safe-per-day and
