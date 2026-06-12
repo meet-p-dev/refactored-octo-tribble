@@ -22,7 +22,7 @@ input[type=color]{-webkit-appearance:none;border:none;cursor:pointer}
 input[type=date]{color-scheme:auto}
 select{-webkit-appearance:none}
 @keyframes mtFade{from{opacity:0}to{opacity:1}}
-@keyframes mtRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes mtRise{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
 @keyframes mtPop{0%{transform:scale(.8);opacity:0}60%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
 @keyframes mtSheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @keyframes mtConfetti{0%{transform:translateY(-10vh) rotate(0);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:.9}}
@@ -31,17 +31,16 @@ select{-webkit-appearance:none}
 .mt-pop{animation:mtPop .34s cubic-bezier(.34,1.56,.64,1) both}
 .mt-press{transition:transform .12s ease}
 .mt-press:active{transform:scale(.94)}
-.mt-hscroll{display:flex;gap:11px;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 16px;margin:0 -16px}
+.mt-hscroll{display:flex;gap:11px;overflow-x:auto;scroll-snap-type:x proximity;scroll-padding:0 16px;padding:2px 16px;margin:0 -16px}
 .mt-hscroll>*{scroll-snap-align:start;flex-shrink:0}
 .mt-label{font-size:11px;font-weight:600;letter-spacing:1.1px;text-transform:uppercase;margin:18px 2px 8px;display:block}
-.mt-stagger>*{animation:mtRise .4s cubic-bezier(.22,1,.36,1) both}
+.mt-stagger>*{animation:mtRise .22s cubic-bezier(.22,1,.36,1) both}
 .mt-stagger>*:nth-child(1){animation-delay:0ms}
-.mt-stagger>*:nth-child(2){animation-delay:35ms}
-.mt-stagger>*:nth-child(3){animation-delay:70ms}
-.mt-stagger>*:nth-child(4){animation-delay:105ms}
-.mt-stagger>*:nth-child(5){animation-delay:140ms}
-.mt-stagger>*:nth-child(6){animation-delay:175ms}
-.mt-stagger>*:nth-child(n+7){animation-delay:210ms}
+.mt-stagger>*:nth-child(2){animation-delay:18ms}
+.mt-stagger>*:nth-child(3){animation-delay:36ms}
+.mt-stagger>*:nth-child(4){animation-delay:54ms}
+.mt-stagger>*:nth-child(5){animation-delay:72ms}
+.mt-stagger>*:nth-child(n+6){animation-delay:90ms}
 .mt-tap{cursor:pointer;transition:transform .12s ease,opacity .12s ease}
 .mt-tap:active{transform:scale(.97);opacity:.85}
 .mt-scaleback{transition:transform .3s cubic-bezier(.32,.72,0,1),border-radius .3s,filter .3s}
@@ -51,7 +50,7 @@ select{-webkit-appearance:none}
 </head>
 <body>
 <div id="root"><div style="font-family:-apple-system,sans-serif;padding:40px 24px;text-align:center;color:#8e8e93;font-size:15px;line-height:1.6">This dev version needs the local server.<br>Run <b>python3 -m http.server 8123</b> here and open <b>http://127.0.0.1:8123/</b><br><br>To use the app directly, open <b>moneytrack.html</b> instead.</div></div>
-<script>window.MT_VERSION="V8.0";</script>
+<script>window.MT_VERSION="V8.1";</script>
 <script type="text/babel">
 const {useState,useEffect,useMemo,useRef}=React;
 
@@ -175,7 +174,7 @@ function Sheet({open,onClose,title,T,children}){
   return(
     <div style={{position:"fixed",inset:0,zIndex:300}}>
       <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.5)",backdropFilter:"blur(3px)",animation:"mtFade .25s ease"}} onClick={onClose}/>
-      <div style={{position:"absolute",bottom:0,left:0,right:0,background:T.card,borderRadius:"22px 22px 0 0",paddingBottom:"calc(env(safe-area-inset-bottom) + 12px)",maxHeight:"92vh",display:"flex",flexDirection:"column",boxShadow:"0 -4px 30px rgba(0,0,0,.3)",animation:"mtSheetUp .34s cubic-bezier(.22,1,.36,1)"}}>
+      <div style={{position:"absolute",bottom:0,left:0,right:0,background:T.card,borderRadius:"22px 22px 0 0",paddingBottom:"calc(env(safe-area-inset-bottom) + 12px)",maxHeight:"calc(100vh - env(safe-area-inset-top) - 32px)",display:"flex",flexDirection:"column",boxShadow:"0 -4px 30px rgba(0,0,0,.3)",animation:"mtSheetUp .34s cubic-bezier(.22,1,.36,1)"}}>
         <div style={{width:36,height:4,background:T.border,borderRadius:99,margin:"12px auto 2px",flexShrink:0}}/>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 20px",flexShrink:0,borderBottom:`1px solid ${T.border}`}}>
           <span style={{fontWeight:700,fontSize:18,color:T.txt}}>{title}</span>
@@ -356,7 +355,7 @@ function App(){
   const sb=mkSet(setBudgets,"mt-budgets");
   const sdn=v=>{const next=typeof v==="function"?v(dismissedNotifs):v;const pruned=next.slice(-200);setDismissedNotifs(pruned);LS.s("mt-dismissed-notifs",pruned);};
 
-  const FAB_YMIN=70,FAB_YMAX=()=>window.innerHeight-88;
+  const FAB_YMIN=130,FAB_YMAX=()=>window.innerHeight-214;
   const onFabDown=e=>{
     e.preventDefault();
     const sx=e.clientX,sy=e.clientY;let moved=false;
@@ -492,14 +491,19 @@ function App(){
 
   const insights=useMemo(()=>{
     const list=[];
-    const dailyAvg=mSt.spt/Math.max(dayOfMonth,1),projected=dailyAvg*daysInMonth;
+    const dailyAvg=mSt.spt/Math.max(dayOfMonth,1);
     const lm=new Date(now0.getFullYear(),now0.getMonth()-1,1);
     const lmKey=`${lm.getFullYear()}-${String(lm.getMonth()+1).padStart(2,"0")}`;
     const lmSpent=txs.filter(t=>t.type==="expense"&&t.date.startsWith(lmKey)).reduce((s,t)=>s+personalAmt(t),0);
     const expTx=txs.filter(t=>t.type==="expense"&&t.date.startsWith(monthKey));
+    // projection from MEDIAN daily spend so one-off big expenses don't explode the forecast
+    const byDay={};expTx.forEach(t=>{byDay[t.date]=(byDay[t.date]||0)+personalAmt(t);});
+    const dTot=Object.values(byDay).sort((a,b)=>a-b);
+    const medDay=dTot.length?dTot[Math.floor(dTot.length/2)]:0;
+    const projected=mSt.spt+medDay*(daysInMonth-dayOfMonth);
     if(mSt.inc>0){const r=Math.round((mSt.inc-mSt.spt)/mSt.inc*100);list.push({icon:"💎",label:"Savings rate",value:r+"%",sub:r>=20?"Great!":"Aim for 20%+",tone:r>=20?"green":r>=0?"blue":"red"});}
     // FIX: only show projected spend if at least 5 days have passed (avoids day-1 scariness)
-    if(mSt.spt>0&&dayOfMonth>=5)list.push({icon:"📈",label:"Projected spend",value:fmt(projected),sub:"by month-end",tone:"blue"});
+    if(mSt.spt>0&&dayOfMonth>=5)list.push({icon:"📈",label:"Projected spend",value:fmt(projected),sub:"at typical pace",tone:"blue"});
     if(lmSpent>0){const diff=Math.round((mSt.spt-lmSpent)/lmSpent*100);list.push({icon:diff<=0?"🎉":"⚠️",label:"vs last month",value:(diff>0?"+":"")+diff+"%",sub:diff<=0?"less spending":"more spending",tone:diff<=0?"green":"red"});}
     list.push({icon:"📅",label:"Daily average",value:fmt(dailyAvg),sub:`over ${dayOfMonth} days`,tone:"blue"});
     if(expTx.length){const big=expTx.reduce((a,b)=>parseFloat(b.amount)>parseFloat(a.amount)?b:a);list.push({icon:"🔥",label:"Biggest expense",value:fmt(parseFloat(big.amount)),sub:big.merchant||"—",tone:"red"});}
@@ -799,7 +803,7 @@ function App(){
       </div>
 
       <div className={"mt-scaleback"+(modal?" dimmed":"")} style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
-        <div className="mt-stagger" style={{padding:"6px 16px 0"}}>
+        <div className="mt-stagger" style={{padding:"6px 16px calc(env(safe-area-inset-bottom) + 126px)"}}>
 
         {/* ══ HOME ══ */}
         {tab==="home"&&<>
@@ -973,7 +977,7 @@ function App(){
             </div>
           )}
 
-          <div style={{marginBottom:90}}>
+          <div style={{marginBottom:12}}>
             <span className="mt-label" style={{color:T.txt3}}>Top categories</span>
             <div style={{background:T.card,borderRadius:20,padding:"13px 15px 4px"}}>
               {catD.length===0?<div style={{color:T.txt3,fontSize:14,paddingBottom:10}}>No spending yet</div>
@@ -1019,7 +1023,7 @@ function App(){
               <span style={{color:T.txt2}}>{filtTxs.length} txs · <strong style={{color:T.acc}}>{fmt(filtTxs.filter(t=>t.type==="expense").reduce((s,t)=>s+personalAmt(t),0))}</strong></span>
             </div>
           )}
-          <div style={{background:T.card,borderRadius:20,overflow:"hidden",marginBottom:90}}>
+          <div style={{background:T.card,borderRadius:20,overflow:"hidden",marginBottom:12}}>
             {filtTxs.length===0?<div style={{padding:24,color:T.txt3,textAlign:"center",fontSize:14}}>No transactions found</div>
             :filtTxs.map((t,i)=>{
               const c=getCat(t.category),a=accs.find(x=>x.id===t.accountId);
@@ -1068,8 +1072,8 @@ function App(){
               </div>
             )}
             {pendingSplits.length===0
-              ?<div style={{background:T.card,borderRadius:20,padding:"24px",textAlign:"center",color:T.txt3,fontSize:14,marginBottom:90}}>No pending splits 🎉</div>
-              :<div style={{background:T.card,borderRadius:20,overflow:"hidden",marginBottom:90}}>
+              ?<div style={{background:T.card,borderRadius:20,padding:"24px",textAlign:"center",color:T.txt3,fontSize:14,marginBottom:12}}>No pending splits 🎉</div>
+              :<div style={{background:T.card,borderRadius:20,overflow:"hidden",marginBottom:12}}>
                 {pendingSplits.map((t,i)=>{
                   const c=getCat(t.category),full=parseFloat(t.amount)||0,share=full/Math.max(t.splitPeople||1,1),owed=full-share;
                   return(
@@ -1143,7 +1147,7 @@ function App(){
             }
             {settledDebts.length>0&&<>
               <div style={{fontSize:13,fontWeight:600,color:T.txt2,marginBottom:8}}>Fully Paid ✓</div>
-              <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:90}}>
+              <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:12}}>
                 {settledDebts.map(d=>(
                   <div key={d.id} style={{background:T.card,borderRadius:12,padding:"12px 16px",display:"flex",alignItems:"center",gap:12,opacity:.55}}>
                     <div style={{width:40,height:40,borderRadius:12,background:d.color,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:18,flexShrink:0}}>{d.personName[0]?.toUpperCase()}</div>
@@ -1164,8 +1168,8 @@ function App(){
               </button>
             </div>
             {recurring.length===0
-              ?<div style={{background:T.card,borderRadius:20,padding:"24px",textAlign:"center",color:T.txt3,fontSize:14,marginBottom:90}}>No recurring transactions yet</div>
-              :<div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:90}}>
+              ?<div style={{background:T.card,borderRadius:20,padding:"24px",textAlign:"center",color:T.txt3,fontSize:14,marginBottom:12}}>No recurring transactions yet</div>
+              :<div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:12}}>
                 {recurring.map(r=>{
                   const c=getCat(r.category),isDue=recurringDue.find(x=>x.id===r.id);
                   return(
@@ -1206,12 +1210,12 @@ function App(){
             <button onClick={()=>{setGoalForm(iGoal);setEditId(null);setModal("goal");}} style={{display:"flex",alignItems:"center",gap:6,background:T.acc,color:"#fff",border:"none",borderRadius:12,padding:"10px 16px",fontWeight:600,fontSize:15,cursor:"pointer"}}>{I.plus("#fff",18)} Add</button>
           </div>
           {goals.length===0
-            ?<div style={{background:T.card,borderRadius:20,padding:"32px 20px",textAlign:"center",marginBottom:90}}>
+            ?<div style={{background:T.card,borderRadius:20,padding:"32px 20px",textAlign:"center",marginBottom:12}}>
               <div style={{fontSize:48,marginBottom:10}}>🎯</div>
               <div style={{fontWeight:600,fontSize:16,marginBottom:6}}>No goals yet</div>
               <div style={{color:T.txt3,fontSize:14}}>Set a savings goal to track progress</div>
             </div>
-            :<div style={{display:"flex",flexDirection:"column",gap:12,marginBottom:90}}>
+            :<div style={{display:"flex",flexDirection:"column",gap:12,marginBottom:12}}>
               {goals.map(g=>{
                 const pct=Math.min(g.savedAmount/g.targetAmount*100,100),done=pct>=100;
                 return(
@@ -1246,7 +1250,7 @@ function App(){
             <div><div style={{fontWeight:700,fontSize:20}}>Accounts</div><div style={{fontSize:13,color:T.txt2,marginTop:1}}>Net: {fmt(totBal)}</div></div>
             <button onClick={()=>{setAccForm(iAcc);setEditId(null);setModal("acc");}} style={{display:"flex",alignItems:"center",gap:6,background:T.acc,color:"#fff",border:"none",borderRadius:12,padding:"10px 16px",fontWeight:600,fontSize:15,cursor:"pointer"}}>{I.plus("#fff",18)} Add</button>
           </div>
-          <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:90}}>
+          <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:12}}>
             {accs.map(a=>{
               const bal=getBal(a.id),cnt=txs.filter(t=>t.accountId===a.id||t.toAccountId===a.id).length;
               return(
@@ -1275,7 +1279,7 @@ function App(){
             <div><div style={{fontWeight:700,fontSize:20}}>Categories</div><div style={{fontSize:13,color:T.txt2,marginTop:1}}>{cats.length} categories</div></div>
             <button onClick={()=>{setCatForm(iCat);setEditId(null);setModal("cat");}} style={{display:"flex",alignItems:"center",gap:6,background:T.acc,color:"#fff",border:"none",borderRadius:12,padding:"10px 16px",fontWeight:600,fontSize:15,cursor:"pointer"}}>{I.plus("#fff",18)} Add</button>
           </div>
-          <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:90}}>
+          <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:12}}>
             {cats.map(c=>(
               <div key={c.id} style={{background:T.card,borderRadius:20,padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:14}}>
                 <div style={{display:"flex",alignItems:"center",gap:12}}>
@@ -1304,7 +1308,7 @@ function App(){
                 <span style={{fontSize:36}}>{c.icon}</span>
                 <div><div style={{fontWeight:700,fontSize:17}}>{c.label}</div><div style={{fontSize:13,color:T.txt2}}>{fmt(c.total)} personal · {Object.keys(c.merchants).length} merchants</div></div>
               </div>
-              <div style={{background:T.card,borderRadius:20,overflow:"hidden",marginBottom:90}}>
+              <div style={{background:T.card,borderRadius:20,overflow:"hidden",marginBottom:12}}>
                 {Object.entries(c.merchants).sort(([,a],[,b])=>b-a).map(([m,tot],i)=>{
                   const cnt=txs.filter(t=>t.merchant===m&&t.category===drillCat).length;
                   return(
@@ -1318,7 +1322,7 @@ function App(){
             </>);
           })():(
             catD.length===0?<div style={{color:T.txt3,fontSize:14}}>No spending data yet.</div>
-            :<div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:90}}>
+            :<div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:12}}>
               {catD.map(c=>(
                 <div key={c.id} onClick={()=>setDrillCat(c.id)} style={{background:T.card,borderRadius:20,padding:"14px 16px",display:"flex",alignItems:"center",gap:13,cursor:"pointer"}} onTouchStart={e=>e.currentTarget.style.background=T.cardH} onTouchEnd={e=>e.currentTarget.style.background=T.card}>
                   <div style={{width:48,height:48,borderRadius:12,background:c.color+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{c.icon}</div>
@@ -1347,7 +1351,7 @@ function App(){
               </div>
             </div>
             <div style={{fontSize:12,fontWeight:600,color:T.txt2,textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>Monthly limit per category</div>
-            <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:90}}>
+            <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:12}}>
               {cats.map(c=>{
                 const limit=parseFloat(budgets[c.id])||0,spent=monthCatSpent[c.id]||0,pct=limit>0?spent/limit:0,over=limit>0&&spent>limit;
                 return(
@@ -1406,7 +1410,7 @@ function App(){
                 <div style={{flex:1,background:T.card,borderRadius:20,padding:"14px"}}><div style={{fontSize:12,color:T.txt2,fontWeight:600}}>Month total</div><div style={{fontSize:20,fontWeight:700,color:T.red,marginTop:3}}>{fmt(monthTotal)}</div></div>
                 <div style={{flex:1,background:T.card,borderRadius:20,padding:"14px"}}><div style={{fontSize:12,color:T.txt2,fontWeight:600}}>Active days</div><div style={{fontSize:20,fontWeight:700,marginTop:3}}>{activeDays}<span style={{fontSize:13,color:T.txt3}}> / {dim}</span></div></div>
               </div>
-              {busiest&&busiest[1]>0&&<div style={{background:T.card,borderRadius:20,padding:"14px 16px",marginBottom:90,display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:12,color:T.txt2,fontWeight:600}}>Busiest day</div><div style={{fontSize:15,fontWeight:600,marginTop:2}}>{busiest[0]}</div></div><div style={{fontSize:18,fontWeight:700,color:T.red}}>{fmt(busiest[1])}</div></div>}
+              {busiest&&busiest[1]>0&&<div style={{background:T.card,borderRadius:20,padding:"14px 16px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:12,color:T.txt2,fontWeight:600}}>Busiest day</div><div style={{fontSize:15,fontWeight:600,marginTop:2}}>{busiest[0]}</div></div><div style={{fontSize:18,fontWeight:700,color:T.red}}>{fmt(busiest[1])}</div></div>}
             </>);
           })()}
         </>}
