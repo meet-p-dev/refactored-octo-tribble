@@ -65,6 +65,8 @@ window.CATS=[
   {id:"salary",label:"Salary",icon:"💼",color:"#22c55e"},
   {id:"freelance",label:"Freelance",icon:"💻",color:"#0ea5e9"},
   {id:"rent",label:"Rent / Bills",icon:"🏠",color:"#ef4444"},
+  {id:"transfer",label:"Transfer",icon:"🔄",color:"#38bdf8"},
+  {id:"debt",label:"Debt / Loan",icon:"🤝",color:"#f59e0b"},
   {id:"other",label:"Other",icon:"📦",color:"#9ca3af"},
 ];
 window.DEFACCS=[
@@ -450,7 +452,7 @@ function App(){
       return true;
     }),[txs,search,fCat,fAcc,fType]);
 
-  const recTxs=useMemo(()=>[...txs].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8),[txs]);
+  const recTxs=useMemo(()=>[...txs].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5),[txs]);
   const pendingSplits=useMemo(()=>txs.filter(t=>t.isSplit&&!t.splitSettled&&t.type==="expense"),[txs]);
   const totalOwed=useMemo(()=>pendingSplits.reduce((s,t)=>{const f=parseFloat(t.amount)||0;return s+(f-f/Math.max(t.splitPeople||1,1));},0),[pendingSplits]);
   const recurringDue=useMemo(()=>{const dom=new Date().getDate();return recurring.filter(r=>r.active&&r.dayOfMonth>=dom&&r.dayOfMonth<=dom+3);},[recurring]);
@@ -526,7 +528,7 @@ function App(){
     if(txForm.type==="transfer"&&!txForm.toAccountId)return;
     const {_settleIds,...cleanForm}=txForm;
     const settleIds=_settleIds||[];
-    const tx={...cleanForm,id:editId||uid(),amount:parseFloat(txForm.amount),splitPeople:txForm.isSplit?parseInt(txForm.splitPeople)||2:1};
+    const tx={...cleanForm,id:editId||uid(),amount:parseFloat(txForm.amount),splitPeople:txForm.isSplit?parseInt(txForm.splitPeople)||2:1,category:txForm.type==="transfer"?"transfer":txForm.category};
     const oldTx=editId?txs.find(t=>t.id===editId):null;
     const base=editId?txs.map(t=>t.id===editId?tx:t):[tx,...txs];
     const newTxs=settleIds.length?base.map(t=>settleIds.includes(t.id)?{...t,splitSettled:true}:t):base;
@@ -623,11 +625,11 @@ function App(){
       const newTxs=[];
       // income tx — money received into account
       if(debtForm.receivedInAccount){
-        newTxs.push({id:uid(),type:"income",amount:total,merchant:`Borrowed from ${debtForm.personName}`,category:"other",accountId:debtForm.receivedInAccount,notes:`Debt: ${debtForm.description||debtForm.personName}`,date:debtForm.date,isSplit:false,splitPeople:1,splitSettled:false});
+        newTxs.push({id:uid(),type:"income",amount:total,merchant:`Borrowed from ${debtForm.personName}`,category:"debt",accountId:debtForm.receivedInAccount,notes:`Debt: ${debtForm.description||debtForm.personName}`,date:debtForm.date,isSplit:false,splitPeople:1,splitSettled:false});
       }
       // FIX: if paidBack > 0, create expense tx for prior repayments
       if(paid>0&&debtForm.receivedInAccount){
-        newTxs.push({id:uid(),type:"expense",amount:paid,merchant:`Repayment → ${debtForm.personName}`,category:"other",accountId:debtForm.receivedInAccount,notes:"Prior repayment (entered at debt creation)",date:tod(),isSplit:false,splitPeople:1,splitSettled:false});
+        newTxs.push({id:uid(),type:"expense",amount:paid,merchant:`Repayment → ${debtForm.personName}`,category:"debt",accountId:debtForm.receivedInAccount,notes:"Prior repayment (entered at debt creation)",date:tod(),isSplit:false,splitPeople:1,splitSettled:false});
       }
       if(newTxs.length)st(prev=>[...newTxs,...prev]);
       // FIX: reset debt banner only when new debt added
@@ -660,7 +662,7 @@ function App(){
     if(amount<=0)return;
     const newPaid=(debt.paidBack||0)+amount;
     const nowSettled=newPaid>=debt.totalAmount;
-    const tx={id:uid(),type:"expense",amount,merchant:`Repayment → ${debt.personName}`,category:"other",accountId:repayForm.accountId,notes:repayForm.notes||"Debt repayment",date:repayForm.date,isSplit:false,splitPeople:1,splitSettled:false};
+    const tx={id:uid(),type:"expense",amount,merchant:`Repayment → ${debt.personName}`,category:"debt",accountId:repayForm.accountId,notes:repayForm.notes||"Debt repayment",date:repayForm.date,isSplit:false,splitPeople:1,splitSettled:false};
     st(prev=>[tx,...prev]);
     sd(prev=>prev.map(d=>d.id===repayForm.debtId?{...d,paidBack:newPaid,settled:nowSettled}:d));
     if(nowSettled){fireConfetti();showToast(`${debt.personName} fully paid! 🎉`);}
@@ -727,8 +729,8 @@ function App(){
   };
   const exportCSV=()=>{
     const rows=[...txs].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,200);
-    const hdr=["id","date","type","amount","merchant","category","accountId","notes"];
-    const csv=[hdr.join(","),...rows.map(r=>[r.id,r.date,r.type,r.amount,`"${(r.merchant||"").replace(/"/g,'""')}"`,r.category||"",r.accountId||"",`"${(r.notes||"").replace(/"/g,'""')}"`].join(","))];
+    const hdr=["Date","Description","Amount","Category"];
+    const esc=v=>'"'+String(v==null?"":v).replace(/"/g,'""')+'"';const csv=[hdr.join(","),...rows.map(r=>[r.date,esc(r.merchant),(r.type==="expense"?-Math.abs(r.amount):Math.abs(r.amount)),esc(getCat(r.category).label)].join(","))];
     const blob=new Blob([csv.join("\n")],{type:"text/csv"});
     const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="transactions.csv";a.click();URL.revokeObjectURL(url);
   };
