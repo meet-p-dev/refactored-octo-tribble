@@ -50,7 +50,7 @@ select{-webkit-appearance:none}
 </head>
 <body>
 <div id="root"><div style="font-family:-apple-system,sans-serif;padding:40px 24px;text-align:center;color:#8e8e93;font-size:15px;line-height:1.6">This dev version needs the local server.<br>Run <b>python3 -m http.server 8123</b> here and open <b>http://127.0.0.1:8123/</b><br><br>To use the app directly, open <b>moneytrack.html</b> instead.</div></div>
-<script>window.MT_VERSION="V8.4";</script>
+<script>window.MT_VERSION="V8.5";</script>
 <script type="text/babel">
 const {useState,useEffect,useMemo,useRef}=React;
 
@@ -264,6 +264,70 @@ function PinLock({T,mode,storedPin,onDone,onCancel}){
 }
 
 
+function OnboardFlow({T,mode,defAccs,onImport,onFinish}){
+  const guide=mode==="guide";
+  const [step,setStep]=useState(0);
+  const [imported,setImported]=useState(false);
+  const [accs,setAccs]=useState(()=>((defAccs&&defAccs.length?defAccs:DEFACCS)||[]).map(a=>({...a,_bal:a.ib?String(a.ib):""})));
+  const upd=(i,k,v)=>setAccs(a=>a.map((x,j)=>j===i?{...x,[k]:v}:x));
+  const addAcc=()=>setAccs(a=>[...a,{id:uid(),name:"",color:"#3b82f6",ib:0,_bal:""}]);
+  const built=()=>accs.filter(a=>(a.name||"").trim()).map(a=>({id:a.id,name:a.name.trim(),color:a.color||"#3b82f6",ib:parseFloat(String(a._bal||"").replace(",","."))||0}));
+  const intro=[
+    {icon:"💰",title:"Welcome to MoneyTrack",body:"Your private money tracker. Accounts, spending, splits with friends, budgets and goals — all stored on your own device. EUR · dark · iPhone-grade."},
+    {icon:"🧭",title:"How it works",body:"Home — your balance & insights\nActivity — every transaction\nPeople — split bills, debts & recurring\nGoals — savings targets\nAnalytics — budgets & charts\n\nTap the + button to add anything."},
+  ];
+  const last=guide?1:3;
+  const btn=(label,onClick,primary,flex)=>(<button onClick={onClick} style={{flex:flex||1,background:primary?T.acc:T.card,color:primary?"#fff":T.txt,border:"none",borderRadius:12,padding:16,fontWeight:primary?700:600,fontSize:16,cursor:"pointer"}}>{label}</button>);
+  const shell=(content,footer)=>(
+    <div style={{position:"fixed",inset:0,zIndex:1000,background:T.bg,color:T.txt,display:"flex",flexDirection:"column",padding:"calc(env(safe-area-inset-top) + 28px) 24px calc(env(safe-area-inset-bottom) + 24px)",animation:"mtFade .25s ease"}}>
+      <div style={{flex:1,overflowY:"auto"}}>{content}</div>
+      <div style={{display:"flex",gap:8,justifyContent:"center",margin:"16px 0"}}>{Array.from({length:last+1}).map((_,i)=><div key={i} style={{width:i===step?22:7,height:7,borderRadius:99,background:i===step?T.acc:T.border,transition:"width .2s"}}/>)}</div>
+      <div style={{display:"flex",gap:12}}>{footer}</div>
+    </div>
+  );
+  if(step<2){
+    const s=intro[step];
+    return shell(
+      <div style={{display:"flex",flexDirection:"column",justifyContent:"center",minHeight:"60vh"}}>
+        <div style={{fontSize:60,marginBottom:20}}>{s.icon}</div>
+        <div style={{fontSize:28,fontWeight:800,letterSpacing:-.6,marginBottom:14,lineHeight:1.15}}>{s.title}</div>
+        <div style={{fontSize:16,color:T.txt2,lineHeight:1.6,whiteSpace:"pre-line"}}>{s.body}</div>
+      </div>,
+      <>{step>0&&btn("Back",()=>setStep(step-1),false,1)}{btn(guide&&step===1?"Got it":"Continue",()=>{if(guide&&step===1)onFinish();else setStep(step+1);},true,2)}</>
+    );
+  }
+  if(step===2){
+    return shell(
+      <div>
+        <div style={{fontSize:24,fontWeight:800,letterSpacing:-.5,marginBottom:4}}>Your accounts</div>
+        <div style={{fontSize:14,color:T.txt2,marginBottom:16}}>Name each account and enter its current balance.</div>
+        {accs.map((a,i)=>(
+          <div key={a.id} style={{display:"flex",gap:8,alignItems:"center",marginBottom:10}}>
+            <input value={a.name} onChange={e=>upd(i,"name",e.target.value)} placeholder="Account name" style={{flex:1.5,minWidth:0,width:"100%",background:T.card,color:T.txt,border:`1px solid ${T.border}`,borderRadius:12,padding:"12px",fontSize:15}}/>
+            <input value={a._bal} onChange={e=>upd(i,"_bal",e.target.value)} type="number" inputMode="decimal" placeholder="€" style={{flex:1,minWidth:0,width:"100%",background:T.card,color:T.txt,border:`1px solid ${T.border}`,borderRadius:12,padding:"12px",fontSize:15}}/>
+            <button onClick={()=>setAccs(x=>x.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:T.txt3,fontSize:18,cursor:"pointer",padding:4,flexShrink:0}}>✕</button>
+          </div>
+        ))}
+        <button onClick={addAcc} style={{background:T.card,color:T.acc,border:`1px dashed ${T.border}`,borderRadius:12,padding:"12px",width:"100%",fontWeight:600,fontSize:14,cursor:"pointer"}}>+ Add account</button>
+      </div>,
+      <>{btn("Back",()=>setStep(1),false,1)}{btn("Continue",()=>setStep(3),true,2)}</>
+    );
+  }
+  return shell(
+    <div style={{display:"flex",flexDirection:"column",justifyContent:"center",minHeight:"55vh"}}>
+      <div style={{fontSize:54,marginBottom:18}}>🏦</div>
+      <div style={{fontSize:26,fontWeight:800,letterSpacing:-.5,marginBottom:10}}>Connect your bank (optional)</div>
+      <div style={{fontSize:15,color:T.txt2,lineHeight:1.6,marginBottom:20}}>If you've used the bank-sync tool, import the file it produced — your real transactions appear automatically. Or skip and add transactions yourself.</div>
+      <label style={{display:"block",background:imported?T.card:T.acc,color:imported?T.green:"#fff",border:imported?`1px solid ${T.border}`:"none",borderRadius:12,padding:14,textAlign:"center",fontWeight:700,fontSize:15,cursor:"pointer",marginBottom:10}}>
+        {imported?"✓ Bank file imported":"Import bank file"}
+        <input type="file" accept="application/json,.json" onChange={e=>{onImport(e);setImported(true);}} style={{display:"none"}}/>
+      </label>
+      <div style={{fontSize:12,color:T.txt3,textAlign:"center"}}>You can also do this anytime from Settings.</div>
+    </div>,
+    btn("Start using MoneyTrack",()=>onFinish(imported?{apply:false}:{apply:true,accs:built()}),true,1)
+  );
+}
+
 function App(){
   const sysDark=window.matchMedia?.("(prefers-color-scheme:dark)").matches??false;
   const [accs,setAccs]           =useState([]);
@@ -355,6 +419,8 @@ function App(){
   const sr=mkSet(setRecurring,"mt-recurring");
   const sd=mkSet(setDebts,"mt-debts");
   const sb=mkSet(setBudgets,"mt-budgets");
+  const [onbDone,setOnbDone]=useState(false);
+  const finishOnboarding=p=>{if(p&&p.apply){sa(p.accs);st([]);sg([]);sr([]);sd([]);sb({});}LS.s("mt-onboarded",window.MT_VERSION);setOnbDone(true);};
   useEffect(()=>{if(LS.g("mt-cat-migrated"))return;const cur=LS.g("mt-txs")||[];let ch=false;const nx=cur.map(t=>{if(t.type==="transfer"&&t.category!=="transfer"){ch=true;return{...t,category:"transfer"};}if(/^(Borrowed from |Repayment )/.test(t.merchant||"")&&t.category!=="debt"){ch=true;return{...t,category:"debt"};}return t;});if(ch){LS.s("mt-txs",nx);setTxs(nx);}LS.s("mt-cat-migrated",true);},[]);
   const sdn=v=>{const next=typeof v==="function"?v(dismissedNotifs):v;const pruned=next.slice(-200);setDismissedNotifs(pruned);LS.s("mt-dismissed-notifs",pruned);};
 
@@ -776,6 +842,9 @@ function App(){
   const fabLeft=fabDrag?(fabDrag.x<window.innerWidth/2?20:window.innerWidth-82):(fabSide==="left"?20:window.innerWidth-82);
   const fabTopVal=fabDrag?Math.max(FAB_YMIN,Math.min(FAB_YMAX(),fabDrag.y-31)):(fabTop!=null?Math.max(FAB_YMIN,Math.min(FAB_YMAX(),fabTop)):window.innerHeight-160);
 
+  const _onbVer=LS.g("mt-onboarded");
+  const onbMode=onbDone?null:(_onbVer==null?(txs.length===0?"full":"guide"):(_onbVer!==window.MT_VERSION?"guide":null));
+
   return(
     <div style={{display:"flex",flexDirection:"column",height:"100dvh",background:T.bg,color:T.txt}}>
       <Confetti show={confetti}/>
@@ -787,6 +856,9 @@ function App(){
             else{haptic(14);setLocked(false);}
           }}
           onCancel={pinFlow?()=>setPinFlow(null):null}/>
+      )}
+      {!locked&&onbMode&&(
+        <OnboardFlow T={T} mode={onbMode} defAccs={accs} onImport={doImport} onFinish={finishOnboarding}/>
       )}
 
       {toast&&(
@@ -1705,7 +1777,7 @@ function App(){
         <div style={{padding:"12px 16px",background:dark?"#2d0000":"#ffdede",borderRadius:12}}>
           <div style={{fontWeight:600,fontSize:14,color:dark?"#ff453a":"#c0392b",marginBottom:4}}>⚠️ Danger zone</div>
           <div style={{fontSize:12,color:dark?"#ff6b6b":"#7f1d1d",marginBottom:10}}>Permanently deletes all your data.</div>
-          <button onClick={()=>{if(confirm("Delete ALL data?")){sa(DEFACCS);st([]);sg([]);sr([]);sd([]);closeM();showToast("All data cleared",false);}}} style={{background:dark?"#ff453a":"#c0392b",color:"#fff",border:"none",borderRadius:12,padding:"10px 16px",fontWeight:600,fontSize:14,cursor:"pointer"}}>Clear all data</button>
+          <button onClick={()=>{if(confirm("Delete ALL data?")){sa(DEFACCS);st([]);sg([]);sr([]);sd([]);sb({});LS.s("mt-onboarded",null);setOnbDone(false);closeM();showToast("Starting fresh…",false);}}} style={{background:dark?"#ff453a":"#c0392b",color:"#fff",border:"none",borderRadius:12,padding:"10px 16px",fontWeight:600,fontSize:14,cursor:"pointer"}}>Clear all data</button>
         </div>
         <div style={{textAlign:"center",fontSize:12,color:T.txt3,marginTop:14}}>MoneyTrack {window.MT_VERSION}</div>
         <div style={{height:16}}/>
