@@ -1,5 +1,11 @@
 # MoneyTrack Changelog
 
+## V9.0 — 2026-07-07 · Rebuilt on Next.js
+- Same app, new foundation: MoneyTrack now runs on Next.js instead of loading React straight from the browser at runtime. More reliable to build on going forward, and sets up for deeper animation work.
+- Sheets (Add Transaction, Settings, and all the others) now use spring-physics animations and can be dragged down from the handle to dismiss, like native iOS sheets.
+- Switching tabs now animates instead of snapping instantly.
+- No changes to your data or any existing feature — this is a like-for-like rebuild, verified tab-by-tab and sheet-by-sheet before shipping.
+
 ## V8.6 — 2026-07-07 · Currency & region
 - **New:** choose your currency and region in Settings → Currency & Region. Pick from Germany, France, Ireland, UK, USA, Canada, Australia, Switzerland, India or Japan.
 - Your choice changes the currency symbol *and* how amounts are written everywhere in the app — e.g. German `1.000,00 €` vs US `$1,000.00`. Each option shows a live example.
