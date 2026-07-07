@@ -50,7 +50,7 @@ select{-webkit-appearance:none}
 </head>
 <body>
 <div id="root"><div style="font-family:-apple-system,sans-serif;padding:40px 24px;text-align:center;color:#8e8e93;font-size:15px;line-height:1.6">This dev version needs the local server.<br>Run <b>python3 -m http.server 8123</b> here and open <b>http://127.0.0.1:8123/</b><br><br>To use the app directly, open <b>moneytrack.html</b> instead.</div></div>
-<script>window.MT_VERSION="V8.5";</script>
+<script>window.MT_VERSION="V8.6";</script>
 <script type="text/babel">
 const {useState,useEffect,useMemo,useRef}=React;
 
@@ -83,7 +83,23 @@ window.LS={
   g:k=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch{return null}},
   s:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
 };
-window.fmt=n=>new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR"}).format(n||0);
+// Currency & region presets — each sets number format (grouping/decimal) + currency symbol.
+window.CURRENCIES=[
+  {id:"de-DE",country:"Germany",flag:"🇩🇪",loc:"de-DE",cur:"EUR",sym:"€"},
+  {id:"fr-FR",country:"France",flag:"🇫🇷",loc:"fr-FR",cur:"EUR",sym:"€"},
+  {id:"en-IE",country:"Ireland",flag:"🇮🇪",loc:"en-IE",cur:"EUR",sym:"€"},
+  {id:"en-GB",country:"United Kingdom",flag:"🇬🇧",loc:"en-GB",cur:"GBP",sym:"£"},
+  {id:"en-US",country:"United States",flag:"🇺🇸",loc:"en-US",cur:"USD",sym:"$"},
+  {id:"en-CA",country:"Canada",flag:"🇨🇦",loc:"en-CA",cur:"CAD",sym:"$"},
+  {id:"en-AU",country:"Australia",flag:"🇦🇺",loc:"en-AU",cur:"AUD",sym:"$"},
+  {id:"de-CH",country:"Switzerland",flag:"🇨🇭",loc:"de-CH",cur:"CHF",sym:"CHF"},
+  {id:"en-IN",country:"India",flag:"🇮🇳",loc:"en-IN",cur:"INR",sym:"₹"},
+  {id:"ja-JP",country:"Japan",flag:"🇯🇵",loc:"ja-JP",cur:"JPY",sym:"¥"},
+];
+window.__mtCurId=window.LS.g("mt-currency")||"de-DE";
+window.mtCur=()=>window.CURRENCIES.find(c=>c.id===window.__mtCurId)||window.CURRENCIES[0];
+window.mtSym=()=>window.mtCur().sym;
+window.fmt=n=>{const c=window.mtCur();return new Intl.NumberFormat(c.loc,{style:"currency",currency:c.cur}).format(n||0);};
 window.uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2);
 window.tod=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;};
 // personal share helper — used everywhere for consistent expense amounts
@@ -273,7 +289,7 @@ function OnboardFlow({T,mode,defAccs,onImport,onFinish}){
   const addAcc=()=>setAccs(a=>[...a,{id:uid(),name:"",color:"#3b82f6",ib:0,_bal:""}]);
   const built=()=>accs.filter(a=>(a.name||"").trim()).map(a=>({id:a.id,name:a.name.trim(),color:a.color||"#3b82f6",ib:parseFloat(String(a._bal||"").replace(",","."))||0}));
   const intro=[
-    {icon:"💰",title:"Welcome to MoneyTrack",body:"Your private money tracker. Accounts, spending, splits with friends, budgets and goals — all stored on your own device. EUR · dark · iPhone-grade."},
+    {icon:"💰",title:"Welcome to MoneyTrack",body:"Your private money tracker. Accounts, spending, splits with friends, budgets and goals — all stored on your own device. Your currency · dark · iPhone-grade. Set your region in Settings."},
     {icon:"🧭",title:"How it works",body:"Home — your balance & insights\nActivity — every transaction\nPeople — split bills, debts & recurring\nGoals — savings targets\nAnalytics — budgets & charts\n\nTap the + button to add anything."},
   ];
   const last=guide?1:3;
@@ -304,7 +320,7 @@ function OnboardFlow({T,mode,defAccs,onImport,onFinish}){
         {accs.map((a,i)=>(
           <div key={a.id} style={{display:"flex",gap:8,alignItems:"center",marginBottom:10}}>
             <input value={a.name} onChange={e=>upd(i,"name",e.target.value)} placeholder="Account name" style={{flex:1.5,minWidth:0,width:"100%",background:T.card,color:T.txt,border:`1px solid ${T.border}`,borderRadius:12,padding:"12px",fontSize:15}}/>
-            <input value={a._bal} onChange={e=>upd(i,"_bal",e.target.value)} type="number" inputMode="decimal" placeholder="€" style={{flex:1,minWidth:0,width:"100%",background:T.card,color:T.txt,border:`1px solid ${T.border}`,borderRadius:12,padding:"12px",fontSize:15}}/>
+            <input value={a._bal} onChange={e=>upd(i,"_bal",e.target.value)} type="number" inputMode="decimal" placeholder={window.mtSym()} style={{flex:1,minWidth:0,width:"100%",background:T.card,color:T.txt,border:`1px solid ${T.border}`,borderRadius:12,padding:"12px",fontSize:15}}/>
             <button onClick={()=>setAccs(x=>x.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:T.txt3,fontSize:18,cursor:"pointer",padding:4,flexShrink:0}}>✕</button>
           </div>
         ))}
@@ -337,6 +353,7 @@ function App(){
   const [recurring,setRecurring] =useState([]);
   const [debts,setDebts]         =useState([]);
   const [dark,setDark]           =useState(()=>LS.g("mt-dark")??sysDark);
+  const [curId,setCurId]         =useState(()=>LS.g("mt-currency")||"de-DE");
   const [tab,setTab]             =useState("home");
   const [modal,setModal]         =useState(null);
   const [editId,setEditId]       =useState(null);
@@ -447,6 +464,7 @@ function App(){
   };
 
   const tgDk=()=>{const nd=!dark;setDark(nd);LS.s("mt-dark",nd);};
+  const setCur=id=>{setCurId(id);window.__mtCurId=id;LS.s("mt-currency",id);haptic(12);};
   const setHap=v=>{setHapticsOn(v);LS.s("mt-haptics",v);};
   const getCat=id=>cats.find(c=>c.id===id)||CATS.find(c=>c.id===id)||{icon:"📦",color:"#9ca3af",label:id||"Other"};
 
@@ -782,7 +800,7 @@ function App(){
   },[ready]);
 
   const doExport=()=>{
-    const data={accs,cats,txs,goals,recurring,debts,budgets,exportedAt:new Date().toISOString(),version:"2.4"};
+    const data={accs,cats,txs,goals,recurring,debts,budgets,currency:curId,exportedAt:new Date().toISOString(),version:"2.5"};
     const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
     const url=URL.createObjectURL(blob);
     const a=document.createElement("a");a.href=url;a.download=`moneytrack-backup-${tod()}.json`;a.click();URL.revokeObjectURL(url);
@@ -796,6 +814,7 @@ function App(){
         const data=JSON.parse(ev.target.result);
         if(data.accs)sa(data.accs);if(data.cats)sc(data.cats);if(data.txs)st(data.txs);
         if(data.goals)sg(data.goals);if(data.recurring)sr(data.recurring);if(data.debts)sd(data.debts);if(data.budgets)sb(data.budgets);
+        if(data.currency&&window.CURRENCIES.some(c=>c.id===data.currency))setCur(data.currency);
         showToast("Data restored!");closeM();
       }catch{showToast("Invalid backup file",false);}
     };
@@ -1450,7 +1469,7 @@ function App(){
                         <div style={{fontSize:12,color:over?T.red:T.txt2,marginTop:1}}>{limit>0?`${fmt(spent)} of ${fmt(limit)}${over?" · over!":""}`:`${fmt(spent)} spent`}</div>
                       </div>
                       <div style={{position:"relative",width:96,flexShrink:0}}>
-                        <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:T.txt3,fontSize:14,pointerEvents:"none"}}>€</span>
+                        <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:T.txt3,fontSize:14,pointerEvents:"none"}}>{mtSym()}</span>
                         <input type="number" inputMode="decimal" min="0" placeholder="—" defaultValue={limit||""} onChange={e=>setBudget(c.id,e.target.value)} style={{width:"100%",background:T.bg,color:T.txt,border:`1.5px solid ${T.inpB}`,borderRadius:12,padding:"9px 10px 9px 22px",fontSize:15,textAlign:"right"}}/>
                       </div>
                     </div>
@@ -1539,7 +1558,7 @@ function App(){
           ))}
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
-          <div><Label text="Amount (€)"/><input type="number" step="0.01" min="0" placeholder="0.00" value={txForm.amount} onChange={e=>setTxForm(f=>({...f,amount:e.target.value}))} style={inp}/></div>
+          <div><Label text={`Amount (${mtSym()})`}/><input type="number" step="0.01" min="0" placeholder="0.00" value={txForm.amount} onChange={e=>setTxForm(f=>({...f,amount:e.target.value}))} style={inp}/></div>
           <div><Label text="Date"/><input type="date" value={txForm.date} onChange={e=>setTxForm(f=>({...f,date:e.target.value}))} style={{...inp,colorScheme:dark?"dark":"light"}}/></div>
         </div>
         <div style={{display:"flex",gap:7,marginBottom:14}}>
@@ -1585,9 +1604,9 @@ function App(){
       <Sheet open={modal==="debt"} onClose={closeM} title={editId?"Edit Debt":"Add Debt"} T={T}>
         <div style={{marginBottom:14}}><Label text="Person's Name"/><input type="text" placeholder="e.g. Sara, Raj, Max…" value={debtForm.personName} onChange={e=>setDebtForm(f=>({...f,personName:e.target.value}))} style={inp}/></div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
-          <div><Label text="Borrowed (€)"/><input type="number" step="0.01" min="0" placeholder="0.00" value={debtForm.totalAmount} onChange={e=>setDebtForm(f=>({...f,totalAmount:e.target.value}))} style={inp}/></div>
+          <div><Label text={`Borrowed (${mtSym()})`}/><input type="number" step="0.01" min="0" placeholder="0.00" value={debtForm.totalAmount} onChange={e=>setDebtForm(f=>({...f,totalAmount:e.target.value}))} style={inp}/></div>
           <div>
-            <Label text="Already paid back (€)"/>
+            <Label text={`Already paid back (${mtSym()})`}/>
             {/* FIX: cap paidBack at totalAmount in input */}
             <input type="number" step="0.01" min="0"
               max={debtForm.totalAmount||undefined}
@@ -1611,7 +1630,7 @@ function App(){
             </select>
             {debtForm.receivedInAccount&&(
               <div style={{marginTop:8,background:dark?"#002e14":"#d4f5df",borderRadius:12,padding:"9px 12px",fontSize:13,color:dark?"#4ade80":"#16a34a",fontWeight:500}}>
-                ✓ Will add +{debtForm.totalAmount?fmt(parseFloat(debtForm.totalAmount)):"€0.00"} income to {accs.find(a=>a.id===debtForm.receivedInAccount)?.name} on {debtForm.date}
+                ✓ Will add +{debtForm.totalAmount?fmt(parseFloat(debtForm.totalAmount)):fmt(0)} income to {accs.find(a=>a.id===debtForm.receivedInAccount)?.name} on {debtForm.date}
                 {parseFloat(debtForm.paidBack)>0&&<div style={{marginTop:4}}>And −{fmt(Math.min(parseFloat(debtForm.paidBack),parseFloat(debtForm.totalAmount)||0))} for prior repayment</div>}
               </div>
             )}
@@ -1637,11 +1656,11 @@ function App(){
               <div><div style={{fontWeight:700,fontSize:16,color:T.txt}}>{debt.personName}</div><div style={{fontSize:13,color:T.red,fontWeight:600}}>{fmt(remaining)} remaining</div></div>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
-              <div><Label text="Amount (€)"/><input type="number" step="0.01" min="0" placeholder="0.00" value={repayForm.amount} onChange={e=>setRepayForm(f=>({...f,amount:e.target.value}))} style={inp}/></div>
+              <div><Label text={`Amount (${mtSym()})`}/><input type="number" step="0.01" min="0" placeholder="0.00" value={repayForm.amount} onChange={e=>setRepayForm(f=>({...f,amount:e.target.value}))} style={inp}/></div>
               <div><Label text="Date"/><input type="date" value={repayForm.date} onChange={e=>setRepayForm(f=>({...f,date:e.target.value}))} style={{...inp,colorScheme:dark?"dark":"light"}}/></div>
             </div>
             <div style={{display:"flex",gap:7,marginBottom:14}}>
-              {chips.map(v=><button key={v} onClick={()=>setRepayForm(f=>({...f,amount:String(v)}))} style={{flex:1,padding:"9px 0",borderRadius:12,border:`1.5px solid ${T.border}`,background:T.bg,color:T.txt,fontWeight:600,fontSize:14,cursor:"pointer"}}>€{v}</button>)}
+              {chips.map(v=><button key={v} onClick={()=>setRepayForm(f=>({...f,amount:String(v)}))} style={{flex:1,padding:"9px 0",borderRadius:12,border:`1.5px solid ${T.border}`,background:T.bg,color:T.txt,fontWeight:600,fontSize:14,cursor:"pointer"}}>{mtSym()}{v}</button>)}
               {remaining>20&&<button onClick={()=>setRepayForm(f=>({...f,amount:String((Math.ceil(remaining/2*100)/100).toFixed(2))}))} style={{flex:1,padding:"9px 0",borderRadius:12,border:`1.5px solid ${T.border}`,background:T.bg,color:T.txt,fontWeight:600,fontSize:14,cursor:"pointer"}}>Half</button>}
               <button onClick={()=>setRepayForm(f=>({...f,amount:String(remaining.toFixed(2))}))} style={{flex:1,padding:"9px 0",borderRadius:12,border:`2px solid ${T.acc}`,background:T.acc+"18",color:T.acc,fontWeight:700,fontSize:14,cursor:"pointer"}}>Full</button>
             </div>
@@ -1655,7 +1674,7 @@ function App(){
       {/* ── ACCOUNT SHEET ── */}
       <Sheet open={modal==="acc"} onClose={closeM} title={editId?"Edit Account":"New Account"} T={T}>
         <div style={{marginBottom:14}}><Label text="Account Name"/><input type="text" placeholder="e.g. N26, Cash, Savings…" value={accForm.name} onChange={e=>setAccForm(f=>({...f,name:e.target.value}))} style={inp}/></div>
-        <div style={{marginBottom:14}}><Label text="Starting Balance (€)"/><input type="number" step="0.01" placeholder="0.00" value={accForm.ib} onChange={e=>setAccForm(f=>({...f,ib:e.target.value}))} style={inp}/></div>
+        <div style={{marginBottom:14}}><Label text={`Starting Balance (${mtSym()})`}/><input type="number" step="0.01" placeholder="0.00" value={accForm.ib} onChange={e=>setAccForm(f=>({...f,ib:e.target.value}))} style={inp}/></div>
         <div style={{marginBottom:22}}><Label text="Color"/><input type="color" value={accForm.color} onChange={e=>setAccForm(f=>({...f,color:e.target.value}))} style={{width:"100%",height:52,border:`1.5px solid ${T.inpB}`,borderRadius:12,background:T.inp,cursor:"pointer",padding:4,display:"block"}}/></div>
         <button onClick={doAddAcc} disabled={!accForm.name} style={{display:"block",width:"100%",background:!accForm.name?T.txt3:T.acc,color:"#fff",border:"none",borderRadius:12,padding:17,fontWeight:700,fontSize:17,cursor:!accForm.name?"not-allowed":"pointer",marginBottom:4}}>{editId?"Save Changes":"Add Account"}</button>
       </Sheet>
@@ -1672,8 +1691,8 @@ function App(){
       <Sheet open={modal==="goal"} onClose={closeM} title={editId?"Edit Goal":"New Savings Goal"} T={T}>
         <div style={{marginBottom:14}}><Label text="Goal Name"/><input type="text" placeholder="e.g. Trip home, New laptop…" value={goalForm.name} onChange={e=>setGoalForm(f=>({...f,name:e.target.value}))} style={inp}/></div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
-          <div><Label text="Target (€)"/><input type="number" step="1" min="0" placeholder="400" value={goalForm.targetAmount} onChange={e=>setGoalForm(f=>({...f,targetAmount:e.target.value}))} style={inp}/></div>
-          <div><Label text="Saved so far (€)"/><input type="number" step="1" min="0" placeholder="0" value={goalForm.savedAmount} onChange={e=>setGoalForm(f=>({...f,savedAmount:e.target.value}))} style={inp}/></div>
+          <div><Label text={`Target (${mtSym()})`}/><input type="number" step="1" min="0" placeholder="400" value={goalForm.targetAmount} onChange={e=>setGoalForm(f=>({...f,targetAmount:e.target.value}))} style={inp}/></div>
+          <div><Label text={`Saved so far (${mtSym()})`}/><input type="number" step="1" min="0" placeholder="0" value={goalForm.savedAmount} onChange={e=>setGoalForm(f=>({...f,savedAmount:e.target.value}))} style={inp}/></div>
         </div>
         <div style={{marginBottom:14}}><Label text="Icon"/><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{GOAL_ICONS.map(ic=><button key={ic} onClick={()=>setGoalForm(f=>({...f,icon:ic}))} style={{width:44,height:44,borderRadius:12,border:`2px solid ${goalForm.icon===ic?T.acc:T.border}`,background:goalForm.icon===ic?T.acc+"18":"transparent",fontSize:22,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>{ic}</button>)}</div></div>
         <div style={{marginBottom:22}}><Label text="Color"/><input type="color" value={goalForm.color} onChange={e=>setGoalForm(f=>({...f,color:e.target.value}))} style={{width:"100%",height:52,border:`1.5px solid ${T.inpB}`,borderRadius:12,background:T.inp,cursor:"pointer",padding:4,display:"block"}}/></div>
@@ -1686,7 +1705,7 @@ function App(){
           {[["expense","💸 Expense"],["income","💰 Income"]].map(([v,l])=><button key={v} onClick={()=>setRecForm(f=>({...f,type:v}))} style={{flex:1,padding:"11px 4px",borderRadius:12,border:`2px solid ${recForm.type===v?T.acc:T.border}`,background:recForm.type===v?T.acc:"transparent",color:recForm.type===v?"#fff":T.txt2,fontWeight:600,fontSize:14,cursor:"pointer"}}>{l}</button>)}
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
-          <div><Label text="Amount (€)"/><input type="number" step="0.01" min="0" placeholder="0.00" value={recForm.amount} onChange={e=>setRecForm(f=>({...f,amount:e.target.value}))} style={inp}/></div>
+          <div><Label text={`Amount (${mtSym()})`}/><input type="number" step="0.01" min="0" placeholder="0.00" value={recForm.amount} onChange={e=>setRecForm(f=>({...f,amount:e.target.value}))} style={inp}/></div>
           <div><Label text="Day of month"/><input type="number" min="1" max="31" placeholder="1" value={recForm.dayOfMonth} onChange={e=>setRecForm(f=>({...f,dayOfMonth:e.target.value}))} style={inp}/></div>
         </div>
         <div style={{marginBottom:14}}><Label text="Merchant / Name"/><input type="text" placeholder="e.g. Apple Music, Rent…" value={recForm.merchant} onChange={e=>setRecForm(f=>({...f,merchant:e.target.value}))} style={inp}/></div>
@@ -1753,6 +1772,27 @@ function App(){
           <div style={{width:40,height:40,borderRadius:12,background:T.acc+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{I.budget(T.acc,20)}</div>
           <div><div style={{fontWeight:600,fontSize:15,color:T.txt}}>Monthly Budgets</div><div style={{fontSize:12,color:T.txt2,marginTop:1}}>Set limits per category</div></div>
         </button>
+        <div style={{marginBottom:10}}><Label text="Currency & Region"/></div>
+        <div style={{fontSize:12,color:T.txt2,marginTop:-4,marginBottom:10}}>Sets your currency and how amounts are written (e.g. 1.000,00 vs 1,000.00) everywhere in the app.</div>
+        <div style={{background:T.bg,borderRadius:12,overflow:"hidden",marginBottom:20}}>
+          {window.CURRENCIES.map((c,i)=>{
+            const sel=curId===c.id;
+            const ex=new Intl.NumberFormat(c.loc,{style:"currency",currency:c.cur}).format(1234.56);
+            return (
+              <React.Fragment key={c.id}>
+                {i>0&&<div style={{height:1,background:T.border}}/>}
+                <button className="mt-tap" onClick={()=>setCur(c.id)} style={{display:"flex",alignItems:"center",gap:12,width:"100%",background:sel?T.acc+"18":"transparent",border:"none",padding:"13px 16px",cursor:"pointer",textAlign:"left"}}>
+                  <span style={{fontSize:22,flexShrink:0}}>{c.flag}</span>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:600,fontSize:15,color:T.txt}}>{c.country} · {c.cur}</div>
+                    <div style={{fontSize:12,color:T.txt2,marginTop:1,fontVariantNumeric:"tabular-nums"}}>{ex}</div>
+                  </div>
+                  {sel&&<span style={{flexShrink:0}}>{I.check(T.acc)}</span>}
+                </button>
+              </React.Fragment>
+            );
+          })}
+        </div>
         <div style={{marginBottom:10}}><Label text="Preferences"/></div>
         <div style={{background:T.bg,borderRadius:12,overflow:"hidden",marginBottom:20}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 16px"}}>

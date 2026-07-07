@@ -1,5 +1,21 @@
 # MoneyTrack Changelog
 
+## V8.6 — 2026-07-07 · Currency & region
+- **New:** choose your currency and region in Settings → Currency & Region. Pick from Germany, France, Ireland, UK, USA, Canada, Australia, Switzerland, India or Japan.
+- Your choice changes the currency symbol *and* how amounts are written everywhere in the app — e.g. German `1.000,00 €` vs US `$1,000.00`. Each option shows a live example.
+- Backups now remember your currency (backup format v2.5); older backups still import fine.
+- Default stays Germany / EUR — nothing changes until you pick.
+
+## V8.5 — 2026-06-25 · First-run onboarding
+- New first-time experience: welcome + quick guide → set up your accounts with their current balances → optionally connect your bank (import the bank-sync file) → you're in.
+- After an app update, a short guide/intro shows again — your data is kept, nothing is re-asked.
+- "Clear all data" now relaunches the full setup, so you can start completely fresh.
+
+
+## V8.4 — 2026-06-24
+- Activity: live summary line under the filter pills — "{N} transactions · {total} {verb}" that follows the active filter (Income → "in", Expenses → "spent", Transfers → "moved", All → expenses "spent"). Previously the total was always expenses-only, so Income/Transfers showed €0,00.
+- Fix: People → Recurring header now reads "1 recurring transaction" (singular) instead of "1 recurring transactions".
+
 ## V8.1 — 2026-06-11 · iPhone bug-fix round (from your screen recordings)
 - **Fixed:** Insights cards were cut off at the left screen edge — now aligned
   with everything else.
