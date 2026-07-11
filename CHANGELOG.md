@@ -1,5 +1,11 @@
 # MoneyTrack Changelog
 
+## V9.2 — 2026-07-11 · Automatic bank sync
+- **New: connect your bank.** Settings → *Connect a bank*. Sign in with your email (a 6-digit code — no password), link your bank once, and your transactions flow in automatically. No more manual file imports.
+- Transactions refresh on their own **3× a day** (morning, afternoon, evening) and are auto-sorted into categories.
+- Your bank data is private to your own account and synced securely; new transactions appear live.
+- Fully additive — your existing manual transactions, accounts, goals, budgets and JSON backups are untouched. Bank login is optional; the app still works exactly as before without it.
+
 ## V9.1 — 2026-07-09 · Quicker + button
 - The **+** button now lives only on the Home tab, in the bottom-right corner — out of the way of the other tabs, each of which already has its own Add button.
 - Tapping it is instant now, especially on Android: it used to need a slightly longer press before it would open. It also has a smoother spring press/appearance.
