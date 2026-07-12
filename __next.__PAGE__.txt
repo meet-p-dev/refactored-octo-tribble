@@ -1,6 +1,6 @@
 1:"$Sreact.fragment"
-2:I[34995,["/refactored-octo-tribble/_next/static/chunks/158myu8e_yme3.js","/refactored-octo-tribble/_next/static/chunks/39f0j4tvoejxz.js"],"App"]
+2:I[34995,["/refactored-octo-tribble/_next/static/chunks/158myu8e_yme3.js","/refactored-octo-tribble/_next/static/chunks/28jzg3ishc1wy.js"],"App"]
 3:I[97367,["/refactored-octo-tribble/_next/static/chunks/158myu8e_yme3.js"],"OutletBoundary"]
 4:"$Sreact.suspense"
-0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{}],[["$","script","script-0",{"src":"/refactored-octo-tribble/_next/static/chunks/39f0j4tvoejxz.js","async":true}]],["$","$L3",null,{"children":["$","$4",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"p32-lS3MKu1IV3iWnCdpx"}
+0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{}],[["$","script","script-0",{"src":"/refactored-octo-tribble/_next/static/chunks/28jzg3ishc1wy.js","async":true}]],["$","$L3",null,{"children":["$","$4",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"aaL9KDfACSdHMYXFspA7f"}
 5:null
