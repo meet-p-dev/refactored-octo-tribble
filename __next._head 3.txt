@@ -1,0 +1,6 @@
+1:"$Sreact.fragment"
+2:I[97367,["/refactored-octo-tribble/_next/static/chunks/158myu8e_yme3.js"],"ViewportBoundary"]
+3:I[97367,["/refactored-octo-tribble/_next/static/chunks/158myu8e_yme3.js"],"MetadataBoundary"]
+4:"$Sreact.suspense"
+5:I[27201,["/refactored-octo-tribble/_next/static/chunks/158myu8e_yme3.js"],"IconMark"]
+0:{"rsc":["$","$1","h",{"children":[null,["$","$L2",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1, viewport-fit=cover"}]]}],["$","div",null,{"hidden":true,"children":["$","$L3",null,{"children":["$","$4",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"MoneyTrack"}],["$","meta","1",{"name":"apple-mobile-web-app-capable","content":"yes"}],["$","meta","2",{"name":"mobile-web-app-capable","content":"yes"}],["$","meta","3",{"name":"apple-mobile-web-app-title","content":"MoneyTrack"}],["$","meta","4",{"name":"apple-mobile-web-app-status-bar-style","content":"black-translucent"}],["$","link","5",{"rel":"icon","href":"/refactored-octo-tribble/favicon.ico?favicon.2vob68tjqpejf.ico","sizes":"256x256","type":"image/x-icon"}],["$","$L5","6",{}]]}]}]}],null]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"vyn6PLhj7xEmSPE6PGe7X"}
