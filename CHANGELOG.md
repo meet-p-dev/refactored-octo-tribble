@@ -1,5 +1,17 @@
 # MoneyTrack Changelog
 
+## V9.4 — 2026-07-14 · Credit cards
+- **New: credit cards.** Accounts → Add → *Credit Card*. Give it a credit limit, the day your statement closes and the day the bill is due (plus an optional APR), and spend on it like any other account.
+- Your card shows **three numbers that usually get confused**: *Statement* (what the closed bill wants on the due date), *Unbilled* (what you've charged since — it rolls onto the next bill) and *Available* (limit minus everything you owe).
+- **Utilisation ring** — green while you're under 30% of your limit, amber above, red near the top. It also warns you if you go over the limit.
+- **Pay Bill** logs the payment for you: one tap fills in a transfer from your bank account for the exact statement amount. Turn on **Auto-pay** and it happens by itself on the due date.
+- **A bill-due banner on Home** from 7 days out, plus notifications when a bill is due or overdue.
+- **Analytics → Spending now shows Cash vs credit** for the month: how much of your spending was money you had versus money you still owe.
+- Also on the card: this cycle's spending pace and where the next bill is heading, an estimate of the interest you'd pay if you don't clear the bill, a 12-bill history chart, and a breakdown of what you put on the card.
+- **Total Balance is now true net worth** — your cash minus what you owe on your cards — with a `cash − credit` line underneath so you can always see both halves.
+- Paying a card bill is **never counted as new spending** (the spending was already counted when you paid with the card), so your monthly totals stay honest.
+- Fully additive: every existing account, transaction, budget, goal and backup works exactly as before.
+
 ## V9.3 — 2026-07-14 · Currency picker + dark background fix
 - **Currency & Region is now a single button** in Settings instead of a long list. It shows your current choice (flag, currency and an example like `1.234,56 €`); tapping it opens a picker with all 10 regions, and choosing one takes you straight back to Settings.
 - **Fixed: white background showing through in dark mode.** The page background itself was never painted, so on iPhone the white default could show through around the app (safe areas, overscroll) — leaving dark cards floating on a light background. The background now always follows your theme, including before the app finishes loading, so there's no light flash on a cold start either.
