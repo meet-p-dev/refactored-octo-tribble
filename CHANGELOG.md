@@ -1,5 +1,10 @@
 # MoneyTrack Changelog
 
+## V9.3 — 2026-07-14 · Currency picker + dark background fix
+- **Currency & Region is now a single button** in Settings instead of a long list. It shows your current choice (flag, currency and an example like `1.234,56 €`); tapping it opens a picker with all 10 regions, and choosing one takes you straight back to Settings.
+- **Fixed: white background showing through in dark mode.** The page background itself was never painted, so on iPhone the white default could show through around the app (safe areas, overscroll) — leaving dark cards floating on a light background. The background now always follows your theme, including before the app finishes loading, so there's no light flash on a cold start either.
+- Nothing changed about your data, your currency choice, or any other feature.
+
 ## V9.2 — 2026-07-11 · Automatic bank sync
 - **New: connect your bank.** Settings → *Connect a bank*. Sign in with your email (a 6-digit code — no password), link your bank once, and your transactions flow in automatically. No more manual file imports.
 - Transactions refresh on their own **3× a day** (morning, afternoon, evening) and are auto-sorted into categories.
