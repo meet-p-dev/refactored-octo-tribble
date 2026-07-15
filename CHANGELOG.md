@@ -1,5 +1,16 @@
 # MoneyTrack Changelog
 
+## V9.6 — 2026-07-15 · Evidence engine, your real rent share, symbols
+- **The classifier is now an evidence engine, not a rule list.** Every incoming payment is scored across all its possible meanings — salary, reimbursement, refund, own transfer, loan — by combining independent signals: wording, who sent it, amount patterns, whether it mirrors an earlier payment, and what you've confirmed about that person before. It only decides on its own when the odds are decisive; anything genuinely ambiguous is held for a one-tap review, with the reason and a confidence percentage shown ("large amount from a person — could be a loan · 46% sure").
+- **It handles the same person meaning different things** — a flatmate can send rent one month and a Splitwise settlement the next; the wording and amounts decide each one individually, and your taps teach it person by person.
+- **Refund pairing:** a credit that matches an earlier payment (same shop, or same amount via a payment processor like Adyen/PayPal) is recognised as a refund automatically.
+- **Own-transfer pairing:** money that leaves one of your accounts and lands in another (same amount, same days) is recognised as your own transfer — on top of matching your name.
+- **Your REAL rent share.** When you collect rent from flatmates and pay the landlord in full, the app now nets it: the landlord payment shows as *your share* (what you paid minus what you collected) in every total, with "your share · full €X" on the row. If a flatmate nets a Splitwise debt out of their rent transfer, the shortfall automatically lands in your share — which is exactly what that month really cost you.
+- **New review option: Loan / payback** — for borrowed money or a loan being repaid to you.
+- **Symbols everywhere.** All app emojis replaced with a crisp SVG symbol set (categories, insights, notifications, empty states, onboarding). Emojis remain only where they're YOUR content: custom category icons and goal icons.
+- Onboarding text updated (Debts instead of the removed splits/recurring).
+- Fully additive: balances still match your bank exactly; nothing about your data changed.
+
 ## V9.5 — 2026-07-15 · Smarter income + Received money
 - **Money you receive is no longer always counted as income.** Until now every credit into your bank was treated as income. A friend paying you back, a refund, rent you collect from flatmates, or a transfer between your own accounts would all inflate your income. Now the app works out what each incoming payment actually is.
 - **New "Received" class of money** — reimbursements, refunds and transfers show as their own thing (in teal), separate from real income (green). It still lands in your **balance** (the money really arrived), it just doesn't count as **income**.

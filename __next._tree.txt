@@ -1,2 +1,2 @@
 :HL["/refactored-octo-tribble/_next/static/chunks/1b7x6hzykko8w.css","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}},"staleTime":300,"buildId":"sXHCjbtc4NqRnE6simNZS"}
+0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}},"staleTime":300,"buildId":"e75lLYDJJ0LcrLvMSBI4w"}
