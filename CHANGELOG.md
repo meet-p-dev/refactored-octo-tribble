@@ -1,5 +1,9 @@
 # MoneyTrack Changelog
 
+## V9.8 — 2026-07-15 · Set your balance the easy way
+- **"Balance today" for accounts.** Editing a cash or bank account, you can now just type what the account shows in your bank *right now* — the app back-calculates the starting balance so your current balance matches exactly and every past day is correct too. No more guessing what your balance was on the first synced day. (The old "Starting balance" option is still there if you prefer it.)
+- For bank accounts this opens pre-filled with the current computed balance, so you only change it if it's off.
+
 ## V9.7 — 2026-07-15 · Honest sign-in + password reset
 - **Sign-in errors now tell the truth.** Before, every failure said "wrong password" — even when the real problem was a rate-limit, an unconfirmed email, or no connection. Now each one gets its own clear message: *"Incorrect password for this account,"* *"Too many attempts — wait a minute,"* *"This email isn't confirmed yet,"* or *"Can't reach the server."*
 - **Forgot your password?** A reset link right on the sign-in screen — enter your email, tap it, and follow the emailed link to set a new password. (Requires email enabled in your Supabase project + the app URL allow-listed under Auth → URL Configuration.)
