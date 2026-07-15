@@ -1,19 +1,5 @@
 # MoneyTrack Changelog
 
-## V9.9 — 2026-07-15 · Cloud-synced learning + your own share
-- **Your learning now syncs across devices.** Every classification you confirm — who's income vs a reimbursement, per person — is saved to your account, so it follows you to a new phone or a reinstall instead of starting over. (Signed-in bank users; private to you via row-level security.)
-- **"My share" on any expense.** Paid the whole rent or a group bill? Open the transaction and enter just *your* part in the new "My share" field — that's what counts as your spending, everywhere. The old automatic rent-splitting was removed: it guessed, and guessing on real money isn't good enough. Now you're in control, and it's predictable.
-- Your share settings sync across devices too, and are included in your backups.
-
-## V9.8 — 2026-07-15 · Set your balance the easy way
-- **"Balance today" for accounts.** Editing a cash or bank account, you can now just type what the account shows in your bank *right now* — the app back-calculates the starting balance so your current balance matches exactly and every past day is correct too. No more guessing what your balance was on the first synced day. (The old "Starting balance" option is still there if you prefer it.)
-- For bank accounts this opens pre-filled with the current computed balance, so you only change it if it's off.
-
-## V9.7 — 2026-07-15 · Honest sign-in + password reset
-- **Sign-in errors now tell the truth.** Before, every failure said "wrong password" — even when the real problem was a rate-limit, an unconfirmed email, or no connection. Now each one gets its own clear message: *"Incorrect password for this account,"* *"Too many attempts — wait a minute,"* *"This email isn't confirmed yet,"* or *"Can't reach the server."*
-- **Forgot your password?** A reset link right on the sign-in screen — enter your email, tap it, and follow the emailed link to set a new password. (Requires email enabled in your Supabase project + the app URL allow-listed under Auth → URL Configuration.)
-- Errors now show inline under the form instead of a toast that vanishes, and "Forgot password?" lights up when the issue is actually a wrong password.
-
 ## V9.6 — 2026-07-15 · Evidence engine, your real rent share, symbols
 - **The classifier is now an evidence engine, not a rule list.** Every incoming payment is scored across all its possible meanings — salary, reimbursement, refund, own transfer, loan — by combining independent signals: wording, who sent it, amount patterns, whether it mirrors an earlier payment, and what you've confirmed about that person before. It only decides on its own when the odds are decisive; anything genuinely ambiguous is held for a one-tap review, with the reason and a confidence percentage shown ("large amount from a person — could be a loan · 46% sure").
 - **It handles the same person meaning different things** — a flatmate can send rent one month and a Splitwise settlement the next; the wording and amounts decide each one individually, and your taps teach it person by person.
