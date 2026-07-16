@@ -1,5 +1,16 @@
 # MoneyTrack Changelog
 
+## V11.0 — 2026-07-17 · The big redesign
+- **New navigation:** Home · Activity · **+** · Insights · Wallet. The big + in the middle of the tab bar adds a transaction from anywhere — one thumb-tap. Wallet gathers everything you *have*: accounts, credit cards, debts and goals in one place (Analytics is now called Insights).
+- **Home is now a "Today" view.** Instead of a stack of banners, one prioritized attention card shows the single most important thing right now (overdue bill → review queue → upcoming bill → over-budget → debts), with the rest tucked behind a "+N more" tap. If you're signed in to bank sync, a small "Bank sync on" pill sits under your balance.
+- **New: balance-over-time chart.** A quiet area chart on Home shows your total balance over the last 60 days — green when trending up, red when down, with the exact change.
+- **Every merchant has a face now.** Transactions show a colored monogram (same shop = same color, always) with a small category badge — Activity, Home and the review list all use it.
+- **Credit cards look like credit cards.** In Wallet, each card is a full card-style tile in its own color: amount owed, utilization bar, and a due-date chip that flags "due in Xd" or "overdue".
+- **Refined look everywhere:** warmer light theme with soft card shadows, deeper OLED dark theme, fluid type that scales to your phone size, and the whole app stays a comfortable width on tablets/desktop instead of stretching.
+- **Android finally gets the full app treatment:** a real install manifest and proper app icons mean "Add to home screen" on Android now installs MoneyTrack as a standalone full-screen app (like iPhone always had), with a matching status-bar color in both themes. New app icon on iPhone too.
+- Accessibility: honors your system's "reduce motion" setting.
+- Everything works exactly as before — same data, same features, no re-learning. (Pre-redesign source kept in `pre-redesign-backup/`.)
+
 ## V10.1 — 2026-07-16 · Smart categories for manual entries too
 - **You don't need a bank connected to get the smarts.** Until now, merchant recognition only worked on bank-synced transactions. Now, when you add a transaction by hand and type the shop, the category fills itself in — type "Rewe" and it picks *Groceries*, "Netflix" and it picks *Subscriptions*.
 - **It learns your shops as you go.** Categorise a shop once when adding it manually and the next entry for that shop suggests it automatically — and that memory syncs to your other devices.

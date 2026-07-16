@@ -1,0 +1,32 @@
+{
+  "name": "MoneyTrack",
+  "short_name": "MoneyTrack",
+  "description": "Your private money tracker — accounts, cards, budgets and goals, stored on your device.",
+  "id": "/refactored-octo-tribble/",
+  "start_url": "/refactored-octo-tribble/",
+  "scope": "/refactored-octo-tribble/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/refactored-octo-tribble/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/refactored-octo-tribble/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/refactored-octo-tribble/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
