@@ -1,5 +1,10 @@
 # MoneyTrack Changelog
 
+## V10.1 — 2026-07-16 · Smart categories for manual entries too
+- **You don't need a bank connected to get the smarts.** Until now, merchant recognition only worked on bank-synced transactions. Now, when you add a transaction by hand and type the shop, the category fills itself in — type "Rewe" and it picks *Groceries*, "Netflix" and it picks *Subscriptions*.
+- **It learns your shops as you go.** Categorise a shop once when adding it manually and the next entry for that shop suggests it automatically — and that memory syncs to your other devices.
+- **It never argues with you.** If you pick a category yourself, typing the merchant won't change it back.
+
 ## V10.0 — 2026-07-15 · Knows your shops from day one
 - **Shops are recognised immediately — no training needed.** MoneyTrack now ships knowing hundreds of common merchants, so Rewe, Lidl and Norma read as *Groceries*, Netflix and Telekom as *Subscriptions*, and DB and Aral as *Transport* from your very first sync. Previously anything your bank didn't label landed in "Other" until you fixed it by hand.
 - **Corrections spread to that shop.** Re-categorise SumUp as *Dining* once and every future SumUp charge follows — it's remembered for that merchant, not just that one row, and syncs across your devices.
