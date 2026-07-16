@@ -1,5 +1,11 @@
 # MoneyTrack Changelog
 
+## V10.0 — 2026-07-15 · Knows your shops from day one
+- **Shops are recognised immediately — no training needed.** MoneyTrack now ships knowing hundreds of common merchants, so Rewe, Lidl and Norma read as *Groceries*, Netflix and Telekom as *Subscriptions*, and DB and Aral as *Transport* from your very first sync. Previously anything your bank didn't label landed in "Other" until you fixed it by hand.
+- **Corrections spread to that shop.** Re-categorise SumUp as *Dining* once and every future SumUp charge follows — it's remembered for that merchant, not just that one row, and syncs across your devices.
+- **People are never touched by this.** Only real businesses are recognised. What a payment from a friend or flatmate means is private to you, stays on your account, and is never shared or guessed from a shared list.
+- Order of authority, most specific first: what you set on a transaction → what you taught for that shop → the built-in merchant list → your bank's guess. So anything it gets wrong is one correction away from being right forever.
+
 ## V9.9 — 2026-07-15 · Cloud-synced learning + your own share
 - **Your learning now syncs across devices.** Every classification you confirm — who's income vs a reimbursement, per person — is saved to your account, so it follows you to a new phone or a reinstall instead of starting over. (Signed-in bank users; private to you via row-level security.)
 - **"My share" on any expense.** Paid the whole rent or a group bill? Open the transaction and enter just *your* part in the new "My share" field — that's what counts as your spending, everywhere. The old automatic rent-splitting was removed: it guessed, and guessing on real money isn't good enough. Now you're in control, and it's predictable.
