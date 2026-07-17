@@ -1,5 +1,11 @@
 # MoneyTrack Changelog
 
+## V11.1 — 2026-07-17 · Symbols, real decimals, tidier Settings
+- **Type amounts the way your country does.** Pick Germany and you type `48,53`; pick the US or UK and it's `48.53` — every amount field in the app follows your currency & region setting, including the quick +1/+5/+10 buttons.
+- **New category, right from the + button.** Adding a transaction and don't have the right category? Tap "+ New" in the category row to create one on the spot — with a real icon, not an emoji — without losing what you were typing.
+- **Goals get real icons too.** The 12 goal icons (plane, house, graduation cap, car, laptop, and more) are now crisp symbols instead of emoji, matching the rest of the app's look. Existing goals upgrade automatically.
+- **Settings, decluttered.** Accounts and Categories management moved out of Settings and into the Wallet tab (which now has a 4th section: Accounts · Debts · Goals · Categories) — Settings now only holds actual settings.
+
 ## V11.0 — 2026-07-17 · The big redesign
 - **New navigation:** Home · Activity · **+** · Insights · Wallet. The big + in the middle of the tab bar adds a transaction from anywhere — one thumb-tap. Wallet gathers everything you *have*: accounts, credit cards, debts and goals in one place (Analytics is now called Insights).
 - **Home is now a "Today" view.** Instead of a stack of banners, one prioritized attention card shows the single most important thing right now (overdue bill → review queue → upcoming bill → over-budget → debts), with the rest tucked behind a "+N more" tap. If you're signed in to bank sync, a small "Bank sync on" pill sits under your balance.
