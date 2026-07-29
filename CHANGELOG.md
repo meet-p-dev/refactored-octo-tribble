@@ -1,5 +1,12 @@
 # MoneyTrack Changelog
 
+## V11.2 — 2026-07-29 · One row per purchase, automatic card bills, spending by month
+- **No more double transactions.** German banks (Sparkasse especially) show a card purchase as *pending* first, then *book* it 1–2 days later — and the two arrive with different reference numbers, so the app couldn't tell they were the same purchase and listed it twice. Deleting one just brought it back on the next sync. Bank sync now waits for the booked entry, so every debit appears exactly once. (Already live — no update needed for this part.)
+- **Credit-card bills settle themselves.** Each card now has an optional "Auto-match bill payment" field: put in the text your bank statement shows for that card's direct debit, and when the payment syncs it's automatically counted as paying down the card instead of as new spending. No more adding the transfer by hand.
+- **Pick your bank from a list.** Connecting a bank now offers one-tap choices — Sparkasse, Commerzbank, Deutsche Bank, ING, DKB, N26, Revolut, PayPal — instead of typing the exact name. The field stays editable for regional Sparkassen and anything else.
+- **Spending, month by month.** Insights → Spending now has All time · This month · Last month · and every earlier month. Pick one and the total plus the whole category breakdown (and each category's merchants) re-scope to just that month — previously it only ever showed all-time totals.
+- Fixed: the Wallet accounts screen could show a different amount owed on a card than Home did.
+
 ## V11.1 — 2026-07-17 · Symbols, real decimals, tidier Settings
 - **Type amounts the way your country does.** Pick Germany and you type `48,53`; pick the US or UK and it's `48.53` — every amount field in the app follows your currency & region setting, including the quick +1/+5/+10 buttons.
 - **New category, right from the + button.** Adding a transaction and don't have the right category? Tap "+ New" in the category row to create one on the spot — with a real icon, not an emoji — without losing what you were typing.
