@@ -1,5 +1,11 @@
 # MoneyTrack Changelog
 
+## V11.4 — 2026-09-08 · Forgetting your password is no longer a dead end
+- **The reset link now opens a page built for the job.** "Forgot password?" has always emailed you a link, but that link dropped you back onto whatever MoneyTrack page you happened to be on and hoped the app noticed. Now it opens a page that does one thing: it tells you which account you are resetting, asks for the new password, and signs you in as soon as you save it.
+- **It is unmistakably MoneyTrack's page.** MoneyTrack shares its account system with Heimat, the author's flat-money app — same email, same password, two products. A reset link could land you in the wrong one. Each app now has a reset page of its own, and MoneyTrack's says so.
+- **An expired link tells you, instead of failing quietly.** Reset links last an hour and work once. Open a spent or expired one and the page says which, and offers to send a fresh one there and then — no going back to the app to start over.
+- **A link is now required to reach the password box.** Previously, simply opening the address while signed in was enough to be shown "choose a new password". It now asks for that only when a real reset link brought you there.
+
 ## V11.3 — 2026-09-06 · Your balance matches your bank again
 - **Fixed: the balance could drift away from your real bank account.** Editing a bank transaction let the app rewrite which *way* the money went — so a €21 payment could silently become €21 received, a €42 error in the total. It stayed wrong forever, because the app never re-checked that row against the bank again. Now the bank owns the direction, amount and date of every synced transaction; your edit only changes what it *means* (category, merchant, notes). Any row that already drifted corrects itself the next time you open the app — no re-import, nothing to clean up.
 - **Every sync now re-checks what it already has.** Previously a sync could only *add* transactions. If one had gone wrong locally, nothing ever fixed it. Now each sync quietly realigns existing bank rows to your bank, leaving your own labelling alone.
