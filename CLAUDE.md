@@ -84,6 +84,14 @@ terminal output AND the browser console after every change.
   real deploy, also sanity-check the actual static export (not just `next dev`) via
   `npx serve out` with `out/` nested under a `refactored-octo-tribble/` folder, since
   basePath asset resolution can differ between dev and export.
+- **Two branches, two purposes.** `source` (this working tree) holds the code;
+  `main` is the published GitHub Pages site and is written ONLY by ./deploy.sh,
+  which runs `git rm -rq .` before copying `out/` in — so never commit source to
+  `main`, it would be deleted by the next deploy. Excluded from the repo on
+  purpose: `bank-sync/` (real transaction exports + the Enable Banking
+  application id), `pre-redesign-backup/`, `MoneyTracker/` (the SwiftUI port has
+  its own repo at ~/Documents/MoneyTracker-iOS), and the thesis files that share
+  this folder.
 - Build/deploy is the USER's call. `./build.sh` runs `npm ci && next build` into `out/`.
   `./deploy.sh "msg"` builds + syncs `out/` into the `.deploy/` GitHub Pages clone
   (clearing stale hashed chunks first, touching `.nojekyll` so GH Pages doesn't mangle
