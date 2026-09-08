@@ -1,0 +1,64 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# ── this repo holds MoneyTrack's SOURCE, on the `source` branch ──
+# `main` is the published GitHub Pages site, written only by ./deploy.sh (which
+# does `git rm -rq .` before copying out/ in — which is why source must never
+# live there). The deploy clone below is that checkout; it is not part of the
+# source tree.
+/.deploy/
+
+# Real bank data and Enable Banking credentials. Transaction exports and the
+# application id are personal and belong nowhere near a remote.
+/bank-sync/
+
+# Superseded by the V11 redesign; kept on disk, not in history. (legacy-buildless/
+# IS tracked — CLAUDE.md calls it the deliberate rollback path.)
+/pre-redesign-backup/
+
+# The SwiftUI iOS port has its own repo at ~/Documents/MoneyTracker-iOS.
+/MoneyTracker/
+
+# Thesis research that happens to sit in this folder; a different project entirely.
+/Fog_LiDAR_*.md
+/Introduction_Storyline.md
+/.fog_research_harvest.json

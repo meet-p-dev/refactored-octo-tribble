@@ -1,0 +1,175 @@
+# MoneyTrack Changelog
+
+## V11.3 — 2026-09-06 · Your balance matches your bank again
+- **Fixed: the balance could drift away from your real bank account.** Editing a bank transaction let the app rewrite which *way* the money went — so a €21 payment could silently become €21 received, a €42 error in the total. It stayed wrong forever, because the app never re-checked that row against the bank again. Now the bank owns the direction, amount and date of every synced transaction; your edit only changes what it *means* (category, merchant, notes). Any row that already drifted corrects itself the next time you open the app — no re-import, nothing to clean up.
+- **Every sync now re-checks what it already has.** Previously a sync could only *add* transactions. If one had gone wrong locally, nothing ever fixed it. Now each sync quietly realigns existing bank rows to your bank, leaving your own labelling alone.
+- **"Sent out" is a real option when editing.** Money that leaves your account but isn't spending — a transfer to yourself, paying yourself back — had no button in the edit sheet and showed a **+** sign, so it looked like money coming in and one tap could reverse it. It's now its own choice with the correct − sign.
+- **A fresh install no longer invents accounts for you.** New installs used to start with five guesses — Sparkasse, Revolut, Revolut Savings, PayPal, Friend (Loan) — that you had to delete one by one. Now you start empty, and both onboarding and Wallet → Accounts tell you where accounts actually come from: connect a bank (which adds the real ones for you, with real balances) or add one by hand for cash. Existing accounts are untouched.
+- **Connect a bank straight from setup.** The last onboarding step now has a real "Connect a bank" button that takes you into bank sync, instead of pointing at a file from an old tool that no longer exists.
+- Fixed: on Home, the "Bank sync on · 3×/day" pill overlapped the "x cash − y credit" line under your balance.
+
+## V11.2 — 2026-07-29 · One row per purchase, automatic card bills, spending by month
+- **No more double transactions.** German banks (Sparkasse especially) show a card purchase as *pending* first, then *book* it 1–2 days later — and the two arrive with different reference numbers, so the app couldn't tell they were the same purchase and listed it twice. Deleting one just brought it back on the next sync. Bank sync now waits for the booked entry, so every debit appears exactly once. (Already live — no update needed for this part.)
+- **Credit-card bills settle themselves.** Each card now has an optional "Auto-match bill payment" field: put in the text your bank statement shows for that card's direct debit, and when the payment syncs it's automatically counted as paying down the card instead of as new spending. No more adding the transfer by hand.
+- **Pick your bank from a list.** Connecting a bank now offers one-tap choices — Sparkasse, Commerzbank, Deutsche Bank, ING, DKB, N26, Revolut, PayPal — instead of typing the exact name. The field stays editable for regional Sparkassen and anything else.
+- **Spending, month by month.** Insights → Spending now has All time · This month · Last month · and every earlier month. Pick one and the total plus the whole category breakdown (and each category's merchants) re-scope to just that month — previously it only ever showed all-time totals.
+- Fixed: the Wallet accounts screen could show a different amount owed on a card than Home did.
+
+## V11.1 — 2026-07-17 · Symbols, real decimals, tidier Settings
+- **Type amounts the way your country does.** Pick Germany and you type `48,53`; pick the US or UK and it's `48.53` — every amount field in the app follows your currency & region setting, including the quick +1/+5/+10 buttons.
+- **New category, right from the + button.** Adding a transaction and don't have the right category? Tap "+ New" in the category row to create one on the spot — with a real icon, not an emoji — without losing what you were typing.
+- **Goals get real icons too.** The 12 goal icons (plane, house, graduation cap, car, laptop, and more) are now crisp symbols instead of emoji, matching the rest of the app's look. Existing goals upgrade automatically.
+- **Settings, decluttered.** Accounts and Categories management moved out of Settings and into the Wallet tab (which now has a 4th section: Accounts · Debts · Goals · Categories) — Settings now only holds actual settings.
+
+## V11.0 — 2026-07-17 · The big redesign
+- **New navigation:** Home · Activity · **+** · Insights · Wallet. The big + in the middle of the tab bar adds a transaction from anywhere — one thumb-tap. Wallet gathers everything you *have*: accounts, credit cards, debts and goals in one place (Analytics is now called Insights).
+- **Home is now a "Today" view.** Instead of a stack of banners, one prioritized attention card shows the single most important thing right now (overdue bill → review queue → upcoming bill → over-budget → debts), with the rest tucked behind a "+N more" tap. If you're signed in to bank sync, a small "Bank sync on" pill sits under your balance.
+- **New: balance-over-time chart.** A quiet area chart on Home shows your total balance over the last 60 days — green when trending up, red when down, with the exact change.
+- **Every merchant has a face now.** Transactions show a colored monogram (same shop = same color, always) with a small category badge — Activity, Home and the review list all use it.
+- **Credit cards look like credit cards.** In Wallet, each card is a full card-style tile in its own color: amount owed, utilization bar, and a due-date chip that flags "due in Xd" or "overdue".
+- **Refined look everywhere:** warmer light theme with soft card shadows, deeper OLED dark theme, fluid type that scales to your phone size, and the whole app stays a comfortable width on tablets/desktop instead of stretching.
+- **Android finally gets the full app treatment:** a real install manifest and proper app icons mean "Add to home screen" on Android now installs MoneyTrack as a standalone full-screen app (like iPhone always had), with a matching status-bar color in both themes. New app icon on iPhone too.
+- Accessibility: honors your system's "reduce motion" setting.
+- Everything works exactly as before — same data, same features, no re-learning. (Pre-redesign source kept in `pre-redesign-backup/`.)
+
+## V10.1 — 2026-07-16 · Smart categories for manual entries too
+- **You don't need a bank connected to get the smarts.** Until now, merchant recognition only worked on bank-synced transactions. Now, when you add a transaction by hand and type the shop, the category fills itself in — type "Rewe" and it picks *Groceries*, "Netflix" and it picks *Subscriptions*.
+- **It learns your shops as you go.** Categorise a shop once when adding it manually and the next entry for that shop suggests it automatically — and that memory syncs to your other devices.
+- **It never argues with you.** If you pick a category yourself, typing the merchant won't change it back.
+
+## V10.0 — 2026-07-15 · Knows your shops from day one
+- **Shops are recognised immediately — no training needed.** MoneyTrack now ships knowing hundreds of common merchants, so Rewe, Lidl and Norma read as *Groceries*, Netflix and Telekom as *Subscriptions*, and DB and Aral as *Transport* from your very first sync. Previously anything your bank didn't label landed in "Other" until you fixed it by hand.
+- **Corrections spread to that shop.** Re-categorise SumUp as *Dining* once and every future SumUp charge follows — it's remembered for that merchant, not just that one row, and syncs across your devices.
+- **People are never touched by this.** Only real businesses are recognised. What a payment from a friend or flatmate means is private to you, stays on your account, and is never shared or guessed from a shared list.
+- Order of authority, most specific first: what you set on a transaction → what you taught for that shop → the built-in merchant list → your bank's guess. So anything it gets wrong is one correction away from being right forever.
+
+## V9.9 — 2026-07-15 · Cloud-synced learning + your own share
+- **Your learning now syncs across devices.** Every classification you confirm — who's income vs a reimbursement, per person — is saved to your account, so it follows you to a new phone or a reinstall instead of starting over. (Signed-in bank users; private to you via row-level security.)
+- **"My share" on any expense.** Paid the whole rent or a group bill? Open the transaction and enter just *your* part in the new "My share" field — that's what counts as your spending, everywhere. The old automatic rent-splitting was removed: it guessed, and guessing on real money isn't good enough. Now you're in control, and it's predictable.
+- Your share settings sync across devices too, and are included in your backups.
+
+## V9.8 — 2026-07-15 · Set your balance the easy way
+- **"Balance today" for accounts.** Editing a cash or bank account, you can now just type what the account shows in your bank *right now* — the app back-calculates the starting balance so your current balance matches exactly and every past day is correct too. No more guessing what your balance was on the first synced day. (The old "Starting balance" option is still there if you prefer it.)
+- For bank accounts this opens pre-filled with the current computed balance, so you only change it if it's off.
+
+## V9.7 — 2026-07-15 · Honest sign-in + password reset
+- **Sign-in errors now tell the truth.** Before, every failure said "wrong password" — even when the real problem was a rate-limit, an unconfirmed email, or no connection. Now each one gets its own clear message: *"Incorrect password for this account,"* *"Too many attempts — wait a minute,"* *"This email isn't confirmed yet,"* or *"Can't reach the server."*
+- **Forgot your password?** A reset link right on the sign-in screen — enter your email, tap it, and follow the emailed link to set a new password. (Requires email enabled in your Supabase project + the app URL allow-listed under Auth → URL Configuration.)
+- Errors now show inline under the form instead of a toast that vanishes, and "Forgot password?" lights up when the issue is actually a wrong password.
+
+## V9.6 — 2026-07-15 · Evidence engine, your real rent share, symbols
+- **The classifier is now an evidence engine, not a rule list.** Every incoming payment is scored across all its possible meanings — salary, reimbursement, refund, own transfer, loan — by combining independent signals: wording, who sent it, amount patterns, whether it mirrors an earlier payment, and what you've confirmed about that person before. It only decides on its own when the odds are decisive; anything genuinely ambiguous is held for a one-tap review, with the reason and a confidence percentage shown ("large amount from a person — could be a loan · 46% sure").
+- **It handles the same person meaning different things** — a flatmate can send rent one month and a Splitwise settlement the next; the wording and amounts decide each one individually, and your taps teach it person by person.
+- **Refund pairing:** a credit that matches an earlier payment (same shop, or same amount via a payment processor like Adyen/PayPal) is recognised as a refund automatically.
+- **Own-transfer pairing:** money that leaves one of your accounts and lands in another (same amount, same days) is recognised as your own transfer — on top of matching your name.
+- **Your REAL rent share.** When you collect rent from flatmates and pay the landlord in full, the app now nets it: the landlord payment shows as *your share* (what you paid minus what you collected) in every total, with "your share · full €X" on the row. If a flatmate nets a Splitwise debt out of their rent transfer, the shortfall automatically lands in your share — which is exactly what that month really cost you.
+- **New review option: Loan / payback** — for borrowed money or a loan being repaid to you.
+- **Symbols everywhere.** All app emojis replaced with a crisp SVG symbol set (categories, insights, notifications, empty states, onboarding). Emojis remain only where they're YOUR content: custom category icons and goal icons.
+- Onboarding text updated (Debts instead of the removed splits/recurring).
+- Fully additive: balances still match your bank exactly; nothing about your data changed.
+
+## V9.5 — 2026-07-15 · Smarter income + Received money
+- **Money you receive is no longer always counted as income.** Until now every credit into your bank was treated as income. A friend paying you back, a refund, rent you collect from flatmates, or a transfer between your own accounts would all inflate your income. Now the app works out what each incoming payment actually is.
+- **New "Received" class of money** — reimbursements, refunds and transfers show as their own thing (in teal), separate from real income (green). It still lands in your **balance** (the money really arrived), it just doesn't count as **income**.
+- **New categories:** 🔁 Reimbursement and ↩️ Refund. Plus a **Received filter** in Activity so you can see everything that came in that isn't income, with a running total.
+- **Review inbox** — when the bank sends money the app isn't sure about, a banner on Home lets you tap what it is (Income / Reimbursement / My transfer / Refund). It **remembers your choice per person**, so the same friend is sorted automatically next time.
+- **You can now set a transaction as "Received"** yourself, and pick Reimbursement or Refund as its category.
+- **Notifications** — turn them on in Settings and get a pop-up when your bank syncs new transactions.
+- **Removed, now that bank sync does the work:** manual *Recurring transactions* (your bank already imports the real ones, so keeping both double-counted) and *Splits*. The People tab is now **Debts** — debt tracking is unchanged.
+- Removed the Haptic-feedback setting (it wasn't working reliably).
+- Fully additive to your data: existing transactions, accounts, budgets, goals and backups are untouched; your balances still match your bank exactly.
+
+## V9.4 — 2026-07-14 · Credit cards
+- **New: credit cards.** Accounts → Add → *Credit Card*. Give it a credit limit, the day your statement closes and the day the bill is due (plus an optional APR), and spend on it like any other account.
+- Your card shows **three numbers that usually get confused**: *Statement* (what the closed bill wants on the due date), *Unbilled* (what you've charged since — it rolls onto the next bill) and *Available* (limit minus everything you owe).
+- **Utilisation ring** — green while you're under 30% of your limit, amber above, red near the top. It also warns you if you go over the limit.
+- **Pay Bill** logs the payment for you: one tap fills in a transfer from your bank account for the exact statement amount. Turn on **Auto-pay** and it happens by itself on the due date.
+- **A bill-due banner on Home** from 7 days out, plus notifications when a bill is due or overdue.
+- **Analytics → Spending now shows Cash vs credit** for the month: how much of your spending was money you had versus money you still owe.
+- Also on the card: this cycle's spending pace and where the next bill is heading, an estimate of the interest you'd pay if you don't clear the bill, a 12-bill history chart, and a breakdown of what you put on the card.
+- **Total Balance is now true net worth** — your cash minus what you owe on your cards — with a `cash − credit` line underneath so you can always see both halves.
+- Paying a card bill is **never counted as new spending** (the spending was already counted when you paid with the card), so your monthly totals stay honest.
+- Fully additive: every existing account, transaction, budget, goal and backup works exactly as before.
+
+## V9.3 — 2026-07-14 · Currency picker + dark background fix
+- **Currency & Region is now a single button** in Settings instead of a long list. It shows your current choice (flag, currency and an example like `1.234,56 €`); tapping it opens a picker with all 10 regions, and choosing one takes you straight back to Settings.
+- **Fixed: white background showing through in dark mode.** The page background itself was never painted, so on iPhone the white default could show through around the app (safe areas, overscroll) — leaving dark cards floating on a light background. The background now always follows your theme, including before the app finishes loading, so there's no light flash on a cold start either.
+- Nothing changed about your data, your currency choice, or any other feature.
+
+## V9.2 — 2026-07-11 · Automatic bank sync
+- **New: connect your bank.** Settings → *Connect a bank*. Sign in with your email (a 6-digit code — no password), link your bank once, and your transactions flow in automatically. No more manual file imports.
+- Transactions refresh on their own **3× a day** (morning, afternoon, evening) and are auto-sorted into categories.
+- Your bank data is private to your own account and synced securely; new transactions appear live.
+- Fully additive — your existing manual transactions, accounts, goals, budgets and JSON backups are untouched. Bank login is optional; the app still works exactly as before without it.
+
+## V9.1 — 2026-07-09 · Quicker + button
+- The **+** button now lives only on the Home tab, in the bottom-right corner — out of the way of the other tabs, each of which already has its own Add button.
+- Tapping it is instant now, especially on Android: it used to need a slightly longer press before it would open. It also has a smoother spring press/appearance.
+- The + button is no longer draggable around the screen (it stays put bottom-right). Nothing else about adding a transaction has changed.
+
+## V9.0 — 2026-07-07 · Rebuilt on Next.js
+- Same app, new foundation: MoneyTrack now runs on Next.js instead of loading React straight from the browser at runtime. More reliable to build on going forward, and sets up for deeper animation work.
+- Sheets (Add Transaction, Settings, and all the others) now use spring-physics animations and can be dragged down from the handle to dismiss, like native iOS sheets.
+- Switching tabs now animates instead of snapping instantly.
+- No changes to your data or any existing feature — this is a like-for-like rebuild, verified tab-by-tab and sheet-by-sheet before shipping.
+
+## V8.6 — 2026-07-07 · Currency & region
+- **New:** choose your currency and region in Settings → Currency & Region. Pick from Germany, France, Ireland, UK, USA, Canada, Australia, Switzerland, India or Japan.
+- Your choice changes the currency symbol *and* how amounts are written everywhere in the app — e.g. German `1.000,00 €` vs US `$1,000.00`. Each option shows a live example.
+- Backups now remember your currency (backup format v2.5); older backups still import fine.
+- Default stays Germany / EUR — nothing changes until you pick.
+
+## V8.5 — 2026-06-25 · First-run onboarding
+- New first-time experience: welcome + quick guide → set up your accounts with their current balances → optionally connect your bank (import the bank-sync file) → you're in.
+- After an app update, a short guide/intro shows again — your data is kept, nothing is re-asked.
+- "Clear all data" now relaunches the full setup, so you can start completely fresh.
+
+
+## V8.4 — 2026-06-24
+- Activity: live summary line under the filter pills — "{N} transactions · {total} {verb}" that follows the active filter (Income → "in", Expenses → "spent", Transfers → "moved", All → expenses "spent"). Previously the total was always expenses-only, so Income/Transfers showed €0,00.
+- Fix: People → Recurring header now reads "1 recurring transaction" (singular) instead of "1 recurring transactions".
+
+## V8.1 — 2026-06-11 · iPhone bug-fix round (from your screen recordings)
+- **Fixed:** Insights cards were cut off at the left screen edge — now aligned
+  with everything else.
+- **Fixed:** last items on every tab no longer hide behind the bottom panel —
+  there's now proper scroll room above it.
+- **Fixed:** the + button can no longer be dragged over the bottom panel or the
+  top header — it stays between them and glides to the left or right edge.
+- **Fixed:** tall sheets (like Settings) no longer slide under the iPhone
+  status bar/clock.
+- **Fixed:** switching tabs/views showed a blank screen before content "popped
+  in" — entrance animation is now ~4× faster and barely blocks anything.
+- **Improved:** "Projected spend" now uses your *typical* daily pace (median),
+  so one big one-off expense no longer explodes the forecast into nonsense.
+
+## V8.0 — 2026-06-11 · The big UI polish
+- **New look, same features:** balance is now a large floating number (the
+  hero of the Home screen), header slimmed to quiet icons, Safe-per-day and
+  Budget-left merged into one compact card, insights became compact chips,
+  bold section titles replaced by small uppercase labels. Same colors, ~25%
+  more content per screen.
+- **Everything is tappable and leads somewhere logical:** Income/Spent →
+  Activity filtered to income/expenses (new filter pills there too) · Net →
+  Analytics · Safe-per-day & Budget → budget view · any Top Category → that
+  category's merchant breakdown · any recent transaction → opens it ·
+  goals preview → Goals.
+- **Smoother:** cards animate in one after another, the screen scales back
+  behind bottom sheets (iOS style), consistent press feedback everywhere.
+- **More consistent:** one spacing grid, two corner radii (was nine), no
+  more emoji in the app chrome — proper icons instead.
+
+## V7.3 — 2026-06-11
+- **Fixed:** recurring transactions could be added *twice* and get yesterday's
+  date when the app was opened between midnight and ~2:00 (timezone bug). All
+  dates now use local time consistently.
+- **Fixed:** tapping *Undo* right after **editing** a transaction deleted it
+  instead of restoring the previous version. Undo now restores it (and also
+  un-marks splits settled by the same save).
+- **Fixed:** backups now include your category budgets (backup format v2.4);
+  importing restores them. Older backups still import fine.
+- **New:** app version shown at the bottom of Settings.
+- Internal: code reorganized for faster development (no visible change).
+
+## V7.2 — earlier
+- Baseline (previous single-file release).
