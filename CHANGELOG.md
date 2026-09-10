@@ -1,5 +1,8 @@
 # MoneyTrack Changelog
 
+## V11.6 — 2026-09-11 · Clear message when a reset email can't be sent
+- **Fixed: "Forgot password?" could show `{}` instead of a message.** If the email couldn't be sent, the app printed the server's empty error. It now says the email couldn't be sent and to try again in a few minutes, and "too many requests" still says to wait a minute.
+
 ## V11.5 — 2026-09-11 · Password reset works from your phone
 - **Reset links now survive your phone's mail app.** iPhone Mail, Gmail and Outlook quietly open links to build a preview — and a reset link only works once, so the preview could use it up before you ever tapped it, leaving you with "link expired". The link now only works when the reset page itself asks for it, so previews can't spend it.
 - **Using MoneyTrack from your home screen?** The home-screen app keeps its own sign-in, separate from Safari. After resetting, the page now tells you to open MoneyTrack and sign in with the new password, instead of implying you're already signed in there.
