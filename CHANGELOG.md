@@ -1,5 +1,10 @@
 # MoneyTrack Changelog
 
+## V11.5 — 2026-09-11 · Password reset works from your phone
+- **Reset links now survive your phone's mail app.** iPhone Mail, Gmail and Outlook quietly open links to build a preview — and a reset link only works once, so the preview could use it up before you ever tapped it, leaving you with "link expired". The link now only works when the reset page itself asks for it, so previews can't spend it.
+- **Using MoneyTrack from your home screen?** The home-screen app keeps its own sign-in, separate from Safari. After resetting, the page now tells you to open MoneyTrack and sign in with the new password, instead of implying you're already signed in there.
+- Reset links that land on the main app rather than the reset page are passed along to it automatically.
+
 ## V11.4 — 2026-09-08 · Forgetting your password is no longer a dead end
 - **The reset link now opens a page built for the job.** "Forgot password?" has always emailed you a link, but that link dropped you back onto whatever MoneyTrack page you happened to be on and hoped the app noticed. Now it opens a page that does one thing: it tells you which account you are resetting, asks for the new password, and signs you in as soon as you save it.
 - **It is unmistakably MoneyTrack's page.** MoneyTrack shares its account system with Heimat, the author's flat-money app — same email, same password, two products. A reset link could land you in the wrong one. Each app now has a reset page of its own, and MoneyTrack's says so.

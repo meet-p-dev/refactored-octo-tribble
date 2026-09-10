@@ -38,9 +38,21 @@ export const viewport = {
   ],
 };
 
+const RECOVERY_HANDOFF = `(function(){var p=location.pathname,s=location.search,h=location.hash;
+if(/\\/reset\\/?$/.test(p))return;
+if((/[?&]token_hash=/.test(s)&&/[?&]type=recovery/.test(s))||/(^#|&)type=recovery/.test(h))
+location.replace("${BASE}/reset/"+s+h);})()`;
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <head>
+        {/* A password-reset link that lands on the app rather than /reset/ — sent
+            before that page existed, or one whose redirect Supabase fell back on
+            — is handed over untouched. Inline and first, because the Supabase
+            client consumes the token the moment it starts. */}
+        <script dangerouslySetInnerHTML={{ __html: RECOVERY_HANDOFF }} />
+      </head>
       <body>
         <div id="root">{children}</div>
       </body>

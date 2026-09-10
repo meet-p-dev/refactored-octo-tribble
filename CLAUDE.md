@@ -97,4 +97,4 @@ terminal output AND the browser console after every change.
   (clearing stale hashed chunks first, touching `.nojekyll` so GH Pages doesn't mangle
   the `_next/` folder) + commits + pushes; bump `VERSION` + `CHANGELOG.md` first.
   **Do NOT deploy unless asked.** Repo: github.com/meet-p-dev/refactored-octo-tribble,
-  branch `main`. Current **V11.4**. (If git is blocked by Xcode: `sudo xcodebuild -license accept`.)
+  branch `main`. Current **V11.5**. (If git is blocked by Xcode: `sudo xcodebuild -license accept`.)

@@ -66,12 +66,27 @@ export default function ResetPage() {
       /* Only a link gets you the password form. Without this the page would hand
          a "choose a new password" box to anyone who opened the URL while a
          MoneyTrack session happened to be sitting in this browser. */
+      /* token_hash is the shape the email template sends: this page redeems it,
+         so a mail app that opens links ahead of the user to preview them (iOS
+         Mail, Gmail and Outlook all do) only fetches a static page and cannot
+         spend the one-time token first. The fragment and ?code= shapes are what
+         older emails and PKCE produce. */
       const code = query.get("code");
-      const viaLink = !!code || hash.get("type") === "recovery" || !!hash.get("access_token");
+      const tokenHash = query.get("token_hash");
+      const viaLink = !!code || !!tokenHash || hash.get("type") === "recovery" || !!hash.get("access_token");
       if (!viaLink) {
         setReason("This page is the last step of a password reset, and it was opened without a link.");
         setStage("dead");
         return;
+      }
+
+      if (tokenHash) {
+        const { error } = await c.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" });
+        if (error) {
+          setReason(/expired|invalid/i.test(error.message) ? "The link had already run out, or was used once already." : error.message);
+          setStage("dead");
+          return;
+        }
       }
 
       if (code) {
@@ -194,6 +209,7 @@ function Done({ T }) {
       <H1 T={T}>Password changed</H1>
       <P T={T}>You are signed in on this browser. Open MoneyTrack and bank sync picks up where it left off.</P>
       <a href={`${BASE}/`} style={{ ...button(T, true), display: "block", textAlign: "center", textDecoration: "none", lineHeight: 1.2 }}>Open MoneyTrack</a>
+      <Small T={T}>Using MoneyTrack from your home screen? It keeps its own sign-in, separate from this browser — open it and sign in with your new password.</Small>
     </>
   );
 }
