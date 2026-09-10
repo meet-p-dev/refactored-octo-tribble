@@ -15,6 +15,7 @@
 import { useEffect, useRef, useState } from "react";
 import { sb } from "../../lib/supabase";
 import { touchAppUser } from "../../lib/appUser";
+import { readableAuthError } from "../../lib/bankSync";
 import { LT, DK } from "../../lib/constants";
 
 /* The recovery token arrives in the URL fragment and the Supabase client wipes
@@ -152,7 +153,7 @@ function NewPassword({ T, email, onDone }) {
     if (pw !== pw2) return setErr("The two passwords do not match.");
     setBusy(true);
     const { error } = await sb().auth.updateUser({ password: pw });
-    if (error) { setBusy(false); return setErr(error.message); }
+    if (error) { setBusy(false); return setErr(readableAuthError(error, "Couldn't save the new password. Please try again.")); }
     // the account has now proved it is a MoneyTrack account, so record it as one
     await touchAppUser();
     onDone();
@@ -184,7 +185,7 @@ function DeadLink({ T, reason }) {
     setBusy(true);
     const { error } = await sb().auth.resetPasswordForEmail(mail.trim(), { redirectTo: window.location.origin + window.location.pathname });
     setBusy(false);
-    if (error) return setErr(error.message);
+    if (error) return setErr(readableAuthError(error, "Couldn't send the email right now. Please try again in a few minutes."));
     // worded the same way whether or not the address has an account, so the page
     // can't be used to find out who has one
     setOk(`If ${mail.trim()} has a MoneyTrack account, a new link is on its way. Open it on this device.`);
