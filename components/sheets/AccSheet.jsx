@@ -56,7 +56,7 @@ export function AccSheet({modal,closeM,editId,T,accForm,setAccForm,inp,doAddAcc,
           <div style={{marginBottom:14}}>
             <Label text="Auto-match bill payment (optional)" T={T}/>
             <input type="text" placeholder="Text on your bank statement, e.g. your card issuer" value={accForm.billPayee||""} onChange={e=>setAccForm(f=>({...f,billPayee:e.target.value}))} style={inp}/>
-            <div style={{fontSize:12,color:T.txt2,marginTop:6,lineHeight:1.45}}>When a synced bank debit contains this text, it&apos;s automatically counted as a payment on this card (a transfer), so you never add it by hand. Leave blank to keep bill payments manual.</div>
+            <div style={{fontSize:12,color:T.txt2,marginTop:6,lineHeight:1.45}}>Card-bill payments from your bank are recognised automatically — e.g. &ldquo;Kreditkartenabrechnung&rdquo;, &ldquo;Mastercard Abrechnung&rdquo;, &ldquo;creditcard bill&rdquo; or this card&apos;s name — and counted as a payment on this card. Only fill this in if your bank words it differently, or if you have several cards and the statement doesn&apos;t say which one.</div>
           </div>
         </>):(
           <div style={{marginBottom:14}}>

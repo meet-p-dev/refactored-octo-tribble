@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { CATS, DEFACCS, CURRENCIES, LT, DK } from "@/lib/constants";
 import { LS, fmt, uid, tod, personalAmt, haptic, setCurrencyId, notify, MT_VERSION } from "@/lib/utils";
-import { isCredit, cardStats } from "@/lib/credit";
+import { isCredit, cardStats, looksLikeCardBill } from "@/lib/credit";
 import { classifyAll, counterpartyKey, bumpPayeeStats, setPayeeCat, migrateRulesToStats, LABEL_CLS } from "@/lib/classify";
 import { merchantCategory } from "@/lib/merchants";
 import { I } from "@/lib/icons";
@@ -326,17 +326,36 @@ export function App(){
     // Bug 3: cards that opted into auto-matching credit-card bill payments. A bank debit
     // whose merchant/notes contain a card's billPayee snippet is rewritten (in this derived
     // view only — raw txs untouched) into a transfer that pays down that card.
-    const payCards=accs.filter(isCredit).filter(a=>(a.billPayee||"").trim()).map(a=>({id:a.id,needle:a.billPayee.trim().toLowerCase()}));
-    const matchCard=t=>{
-      if(!payCards.length)return null;
-      if(t.accountId&&accs.find(a=>a.id===t.accountId&&isCredit(a)))return null; // never re-map a charge on the card itself
+    const allCards=accs.filter(isCredit);
+    const payCards=allCards.filter(a=>(a.billPayee||"").trim()).map(a=>({id:a.id,needle:a.billPayee.trim().toLowerCase()}));
+    // V11.7: beyond the billPayee snippet, bank debits that READ like a card-bill payment
+    // ("Kreditkartenabrechnung", "Mastercard Abrechnung", "creditcard bill", the issuer's
+    // name…) are matched automatically — see looksLikeCardBill() in lib/credit.js. The card
+    // is the one named in the text, else your only card; with several cards and no name in
+    // the text we don't guess (set billPayee on the right card instead).
+    const matchCard=(t,c)=>{
+      if(!allCards.length)return null;
+      if(t.accountId&&allCards.some(a=>a.id===t.accountId))return null; // never re-map a charge on the card itself
       const hay=`${t.merchant||""} ${t.notes||""}`.toLowerCase();
-      return payCards.find(c=>c.id!==t.accountId&&hay.includes(c.needle))||null;
+      const byPayee=payCards.find(p=>p.id!==t.accountId&&hay.includes(p.needle));
+      if(byPayee)return byPayee;
+      if(!t._bank)return null; // keyword detection is for synced bank rows, not what you typed yourself
+      const ownTransfer=c?.type==="debit"&&c?.category==="transfer";
+      if(!looksLikeCardBill(hay,{ownTransfer}))return null;
+      const named=allCards.find(a=>{const n=(a.name||"").trim().toLowerCase();return n.length>=3&&hay.includes(n);});
+      if(named)return {id:named.id};
+      return allCards.length===1?{id:allCards[0].id}:null;
     };
     return txs.map(t=>{
       const c=res.get(t.id);
       const ov=shareOverrides[t.id];
-      const card=(t.type==="expense"||t.type==="debit")?matchCard(t):null;
+      // Your own choice beats auto-matching: if you set this row to something other than a
+      // transfer (e.g. "no, that's an Expense"), or picked a destination yourself, leave it.
+      // A transfer decision WITHOUT a destination (saved by V11.3–11.6, which dropped it)
+      // still gets its card filled in here.
+      const dec=txDecisions[t.id];
+      const userPicked=!!dec&&(dec.type!=="transfer"||!!dec.toAccountId);
+      const card=(!userPicked&&(t.type==="expense"||t.type==="debit"))?matchCard(t,c):null;
       if(!c&&ov==null&&!card)return t;
       const next={...t};
       if(c){
@@ -344,6 +363,13 @@ export function App(){
         if(c.type)next.type=c.type;
         if(c.category)next.category=c.category;
         if(c.shareAmt!=null)next._shareAmt=c.shareAmt;
+        // Your "Transfer → card/account" decision on a bank debit. Only a destination that
+        // still exists and isn't the same account counts; otherwise it stays plain money
+        // out ("debit") — the bank balance is identical either way.
+        if(c.type==="transfer"){
+          const dest=c.toAccountId&&c.toAccountId!==t.accountId&&accs.some(a=>a.id===c.toAccountId)?c.toAccountId:"";
+          if(dest)next.toAccountId=dest;else next.type="debit";
+        }
       }
       // Card bill payment auto-match: turn the debit into a transfer into the card. Transfers
       // are excluded from spend totals, so the bill is never double-counted as spending, and
@@ -624,8 +650,13 @@ export function App(){
     // Teach-on-correct: when you re-type/re-categorise a BANK transaction, remember it so
     // the classifier respects this exact row AND auto-applies your choice to this payee
     // in future syncs (no re-correcting the same friend every month).
-    if(oldTx&&oldTx._bank&&effOld&&(effOld.type!==txForm.type||effOld.category!==txForm.category)){
-      const decision={type:txForm.type,category:txForm.category};
+    // A transfer's category is always "transfer" (same rule as tx.category above), and it
+    // must remember WHERE it went — the destination is what lets a card-bill payment from a
+    // synced account actually reach the card (cardStats counts transfers INTO the card).
+    const isTrf=txForm.type==="transfer";
+    const decCat=isTrf?"transfer":txForm.category;
+    if(oldTx&&oldTx._bank&&effOld&&(effOld.type!==txForm.type||effOld.category!==decCat||(isTrf&&effOld.toAccountId!==txForm.toAccountId))){
+      const decision={type:txForm.type,category:decCat,...(isTrf?{toAccountId:txForm.toAccountId}:{})};
       saveTxDecisions(prev=>({...prev,[tx.id]:decision}));
       const key=counterpartyKey(tx);
       const label=Object.keys(LABEL_CLS).find(l=>LABEL_CLS[l].type===txForm.type&&LABEL_CLS[l].category===txForm.category);

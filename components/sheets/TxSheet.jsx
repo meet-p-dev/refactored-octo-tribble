@@ -145,7 +145,8 @@ export function TxSheet({modal,closeM,editId,T,dark,fmt,txForm,setTxForm,accs,ca
           <div style={{marginBottom:14}}>
             <Label text="To Account" T={T}/>
             <div className="mt-hscroll" style={{...hscrollBleed,gap:7}}>
-              {accs.map(a=>{
+              {/* The account the money leaves can't also be where it arrives. */}
+              {accs.filter(a=>a.id!==txForm.accountId).map(a=>{
                 const on=txForm.toAccountId===a.id;
                 return(
                   <Chip key={a.id} on={on} T={T} onClick={()=>setTxForm(f=>({...f,toAccountId:a.id}))}>
