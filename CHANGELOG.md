@@ -1,5 +1,11 @@
 # MoneyTrack Changelog
 
+## V11.7 — 2026-09-13 · Credit-card bills reach the card again
+- **Fixed: paying a card bill from your bank never reached the card.** Setting a synced bank payment to *Transfer → your card* said "saved", then snapped back to *Sent out*, and the card's amount owed never went down. The €42-protection from V11.3 was too strict: it only allowed "Expense" or "Sent out" for money leaving your account, and threw away where the money went. A transfer out is still money out, so it's allowed again — as long as you pick where it went — and your balance protection stays exactly as it was.
+- **Card bills are recognised automatically.** A bank payment worded like a card bill — "Kreditkartenabrechnung", "Mastercard Abrechnung", "creditcard bill", "VISA Rechnung", or the issuer's name (Advanzia, Barclaycard, American Express…) — now counts as paying your card by itself, no setup needed. It goes to the card named in the text, or to your card if you only have one. Ordinary card *purchases* ("Debit Mastercard", girocard, "Kartenzahlung") and your bank's own "Abrechnung" are not mistaken for bills.
+- **Your choice wins.** If the app matches a payment you don't want counted as a card bill, set it to Expense or Sent out and it stays that way.
+- Transfers can no longer pick the same account as both "from" and "to".
+
 ## V11.6 — 2026-09-11 · Clear message when a reset email can't be sent
 - **Fixed: "Forgot password?" could show `{}` instead of a message.** If the email couldn't be sent, the app printed the server's empty error. It now says the email couldn't be sent and to try again in a few minutes, and "too many requests" still says to wait a minute.
 
