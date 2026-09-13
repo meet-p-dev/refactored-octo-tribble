@@ -4,6 +4,7 @@ import { useRef, useEffect, useState } from "react";
 import { mtSym } from "@/lib/utils";
 import { I, CatIcon } from "@/lib/icons";
 import { Sheet } from "@/components/Sheet";
+import { isBankAcc } from "@/lib/credit";
 import { Label } from "@/components/Label";
 import { Chip, SubmitBtn, AmountInput, SymbolGrid, ColorDots } from "@/components/form";
 
@@ -203,6 +204,23 @@ export function TxSheet({modal,closeM,editId,T,dark,fmt,txForm,setTxForm,accs,ca
             <div><Label text={`My share (opt., ${mtSym()})`} T={T}/><AmountInput placeholder={txForm.amount?`Full ${fmt(parseFloat(txForm.amount)||0)}`:"Full amount"} value={txForm._share||""} onChange={v=>setTxForm(f=>({...f,_share:v}))} style={inp}/></div>
           )}
         </div>
+
+        {/* V11.8 heads-ups, so a balance never changes (or doesn't) by surprise:
+            1. dated before an account's starting-balance date → it won't move that balance;
+            2. a NEW hand-typed row on a bank-synced account → counted twice once the real one syncs. */}
+        {(()=>{
+          const fmtD=d=>{const[y,m,dd]=d.split("-").map(Number);return new Date(y,m-1,dd).toLocaleDateString("default",{day:"numeric",month:"short"});};
+          const from=accs.find(a=>a.id===txForm.accountId);
+          const to=txForm.type==="transfer"?accs.find(a=>a.id===txForm.toAccountId):null;
+          const msgs=[];
+          [from,to].forEach(a=>{if(a&&a.ibDate&&txForm.date&&txForm.date<a.ibDate)msgs.push(`Before ${a.name}’s starting date (${fmtD(a.ibDate)}) — it stays in your history but won’t change ${a.name}’s balance.`);});
+          if(!editId)[from,to].forEach(a=>{if(isBankAcc(a))msgs.push(`${a.name} syncs from your bank. If this happened there, it will appear by itself — adding it by hand counts it twice.`);});
+          return msgs.length?(
+            <div style={{background:T.inp,border:`1px solid ${T.border}`,borderRadius:12,padding:"10px 12px",fontSize:12.5,color:T.txt2,lineHeight:1.5,marginBottom:14,display:"flex",flexDirection:"column",gap:6}}>
+              {msgs.map((m,i)=><div key={i}>{m}</div>)}
+            </div>
+          ):null;
+        })()}
         {txForm.type==="expense"&&(
           <div style={{fontSize:12,color:T.txt2,marginBottom:14}}>Paid for others (rent, group bills)? Enter only <b>your</b> part — that&apos;s what counts as your spending. Leave blank for the full amount.</div>
         )}

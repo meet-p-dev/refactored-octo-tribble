@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { DEFACCS } from "@/lib/constants";
-import { uid, mtSym } from "@/lib/utils";
+import { uid, mtSym, tod } from "@/lib/utils";
 import { I } from "@/lib/icons";
 import { AmountInput } from "@/components/form";
 
@@ -13,7 +13,7 @@ export function OnboardFlow({T,mode,defAccs,onImport,onFinish}){
   const [accs,setAccs]=useState(()=>((defAccs&&defAccs.length?defAccs:DEFACCS)||[]).map(a=>({...a,_bal:a.ib?String(a.ib):""})));
   const upd=(i,k,v)=>setAccs(a=>a.map((x,j)=>j===i?{...x,[k]:v}:x));
   const addAcc=()=>setAccs(a=>[...a,{id:uid(),name:"",color:"#3b82f6",ib:0,_bal:""}]);
-  const built=()=>accs.filter(a=>(a.name||"").trim()).map(a=>({id:a.id,name:a.name.trim(),color:a.color||"#3b82f6",ib:parseFloat(String(a._bal||"").replace(",","."))||0}));
+  const built=()=>accs.filter(a=>(a.name||"").trim()).map(a=>({id:a.id,name:a.name.trim(),color:a.color||"#3b82f6",ib:parseFloat(String(a._bal||"").replace(",","."))||0,ibDate:tod()})); // "what's in it today" — older entries added later are already included
   const intro=[
     {icon:I.wallet,title:"Welcome to MoneyTrack",body:"Your private money tracker. Accounts, spending, debts, budgets and goals — all stored on your own device. Your currency · dark · iPhone-grade. Set your region in Settings."},
     {icon:I.goal,title:"How it works",body:"Home — your balance, alerts & trends\nActivity — every transaction\nInsights — spending, budgets & calendar\nWallet — accounts, cards, debts & goals\n\nTap the big + button to add anything."},

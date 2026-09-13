@@ -19,7 +19,7 @@ export function HomeTab({
   insights,chartD,recTxs,getCat,goals,catD,mxCat,
   assets,creditOwed,dueCards,openCard,
   reviewCount,openReview,
-  balSeries,sbUser,openBankSync,
+  balSeries,sbUser,openBankSync,ibIssues,fixIbIssue,
   setTab,setPeopleView,setAnaView,setDrillCat,goTxs,doEditTx,haptic,
 }){
   const [moreAlerts,setMoreAlerts]=useState(false);
@@ -37,6 +37,17 @@ export function HomeTab({
     title:"Add your first account",
     sub:"Connect a bank for real transactions, or add one by hand",
     cta:"Set up",onTap:()=>{haptic(8);setTab("accs");},
+  });
+  // V11.8: an account counting entries older than its starting balance. A wrong balance makes
+  // every other number wrong (bills, safe-to-spend…), so this sits right at the top.
+  (ibIssues||[]).forEach(x=>{
+    const card=x.acc.kind==="credit";
+    alerts.push({
+      k:"ib-"+x.acc.id,tone:T.amber,icon:card?I.card:I.wallet,
+      title:`${x.acc.name} counts ${x.n} old ${x.n===1?"entry":"entries"} twice`,
+      sub:card?`Should owe ${fmt(Math.max(-x.fixed,0))}, not ${fmt(Math.max(-x.now,0))} — tap to fix`:`Should be ${fmt(x.fixed)}, not ${fmt(x.now)} — tap to fix`,
+      cta:"Fix",onTap:()=>{haptic(8);fixIbIssue&&fixIbIssue(x.acc);},
+    });
   });
   if(overdueCards.length>0)alerts.push({
     k:"overdue",tone:T.red,icon:I.card,

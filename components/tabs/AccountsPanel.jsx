@@ -13,6 +13,9 @@ const shade=(hex,f)=>{
   return `rgb(${ch((n>>16)&255)},${ch((n>>8)&255)},${ch(n&255)})`;
 };
 
+// "5 Jul" — the starting-balance date shown next to "initial …" (V11.8).
+const fmtD=d=>{const[y,m,dd]=d.split("-").map(Number);return new Date(y,m-1,dd).toLocaleDateString("default",{day:"numeric",month:"short"});};
+
 export function AccountsPanel({
   T,fmt,totBal,assets,creditOwed,accs,txs,getBal,setAccForm,iAcc,setEditId,setModal,doEditAcc,delAcc,openCard,
   setFType,setSearch,setFCat,setFAcc,setTab,haptic,openBankSync,
@@ -62,7 +65,7 @@ export function AccountsPanel({
                   <div style={{width:50,height:50,borderRadius:14,background:`linear-gradient(180deg,${a.color},${shade(a.color,.22)})`,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:22,flexShrink:0}}>{a.name[0]}</div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontWeight:600,fontSize:16}}>{a.name}</div>
-                    <div style={{fontSize:12,color:T.txt2,marginTop:2}}>{cnt} transaction{cnt===1?"":"s"} · initial {fmt(a.ib)}</div>
+                    <div style={{fontSize:12,color:T.txt2,marginTop:2}}>{cnt} transaction{cnt===1?"":"s"} · initial {fmt(a.ib)}{a.ibDate?` on ${fmtD(a.ibDate)}`:""}</div>
                   </div>
                   <div style={{textAlign:"right",flexShrink:0}}>
                     <div className="mt-num" style={{fontWeight:700,fontSize:18,color:bal>=0?T.green:T.red}}>{fmt(bal)}</div>

@@ -3,7 +3,7 @@
 import { Sheet } from "@/components/Sheet";
 import { Ring } from "@/components/Ring";
 import { I, CatIcon } from "@/lib/icons";
-import { cardStats, billHistory, utilTone, utilLabel } from "@/lib/credit";
+import { cardStats, billHistory, utilTone, utilLabel, isBankAcc } from "@/lib/credit";
 
 const fmtDay=d=>{const[y,m,dd]=d.split("-").map(Number);return new Date(y,m-1,dd).toLocaleDateString("default",{day:"numeric",month:"short"});};
 
@@ -77,7 +77,7 @@ export function CardSheet({modal,closeM,T,dark,fmt,card,txs,getCat,accs,onPayBil
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontWeight:600,fontSize:14,color:dueTone}}>{dueText}</div>
           <div style={{fontSize:12,color:T.txt2,marginTop:1}}>
-            {card.autopay&&payFrom?`Auto-pay on from ${payFrom.name}`:payFrom?`Pays from ${payFrom.name}`:"Utilisation: "+utilLabel(s.util)}
+            {isBankAcc(payFrom)?`Paid from ${payFrom.name} — picked up by bank sync`:card.autopay&&payFrom?`Auto-pay on from ${payFrom.name}`:payFrom?`Pays from ${payFrom.name}`:"Utilisation: "+utilLabel(s.util)}
           </div>
         </div>
       </div>

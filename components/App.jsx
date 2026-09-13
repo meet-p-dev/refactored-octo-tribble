@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { CATS, DEFACCS, CURRENCIES, LT, DK } from "@/lib/constants";
 import { LS, fmt, uid, tod, personalAmt, haptic, setCurrencyId, notify, MT_VERSION } from "@/lib/utils";
-import { isCredit, cardStats, looksLikeCardBill } from "@/lib/credit";
+import { isCredit, cardStats, looksLikeCardBill, countsFor, isBankAcc, suggestStartDate } from "@/lib/credit";
 import { classifyAll, counterpartyKey, bumpPayeeStats, setPayeeCat, migrateRulesToStats, LABEL_CLS } from "@/lib/classify";
 import { merchantCategory } from "@/lib/merchants";
 import { I } from "@/lib/icons";
@@ -94,7 +94,7 @@ export function App(){
   const fireConfetti=()=>{setConfetti(true);haptic([12,40,12,40,18]);setTimeout(()=>setConfetti(false),2600);};
 
   const iTx={date:tod(),type:"expense",amount:"",merchant:"",category:"other",accountId:"",toAccountId:"",notes:"",isSplit:false,splitPeople:2,splitSettled:false,_share:"",_catTouched:false};
-  const iAcc={name:"",color:"#3b82f6",ib:"",kind:"cash",creditLimit:"",owed:"",statementDay:"",dueDay:"",apr:"",payFromId:"",autopay:false,billPayee:"",_balMode:"start",_currentBal:""};
+  const iAcc={name:"",color:"#3b82f6",ib:"",kind:"cash",creditLimit:"",owed:"",statementDay:"",dueDay:"",apr:"",payFromId:"",autopay:false,billPayee:"",_balMode:"start",_currentBal:"",ibDate:tod(),_ibHint:null};
   const iCat={label:"",icon:"📦",sym:"box",color:"#9ca3af"};
   const iGoal={name:"",targetAmount:"",savedAmount:"",icon:"🎯",sym:"goal",color:"#007aff"};
   const iDebt={personName:"",totalAmount:"",paidBack:"0",date:tod(),description:"",color:"#e11d48",receivedInAccount:""};
@@ -389,10 +389,16 @@ export function App(){
   // from income until you confirm (they sit as neutral "credit" meanwhile).
   const reviewTxs=useMemo(()=>ctxs.filter(t=>t._needsReview),[ctxs]);
 
-  const getBal=useMemo(()=>(aid)=>{
-    const a=accs.find(x=>x.id===aid);if(!a)return 0;
+  // balOf(account): starting balance + every transaction that COUNTS for this account.
+  // V11.8: rows dated before the account's starting-balance date (ibDate) are already inside
+  // ib, so they're skipped (countsFor, lib/credit.js). Takes the account OBJECT so the app
+  // can ask "what if it started on date X?" (see ibIssues).
+  const balOf=useMemo(()=>(a)=>{
+    if(!a)return 0;
+    const aid=a.id;
     let b=parseFloat(a.ib)||0;
     ctxs.forEach(t=>{
+      if(!countsFor(a,t))return;
       const v=parseFloat(t.amount)||0;
       // Money IN (real income OR a non-income credit) raises the balance; money OUT lowers it.
       if((t.type==="income"||t.type==="credit")&&t.accountId===aid)b+=v;
@@ -401,7 +407,8 @@ export function App(){
       if(t.type==="transfer"&&t.toAccountId===aid)b+=v;
     });
     return b;
-  },[accs,ctxs]);
+  },[ctxs]);
+  const getBal=useMemo(()=>(aid)=>balOf(accs.find(x=>x.id===aid)),[accs,balOf]);
 
   // FIX: totBal uses same memo as getBal — no stale closure
   // Cards carry a negative balance, so this is TRUE net worth (cash minus card debt).
@@ -416,17 +423,38 @@ export function App(){
   const creditOwed=useMemo(()=>cardStatsList.reduce((s,c)=>s+Math.max(c.currentBalance,0),0),[cardStatsList]);
   const dueCards=useMemo(()=>cardStatsList.filter(c=>c.dueSoon||c.overdue).sort((a,b)=>a.daysToDue-b.daysToDue),[cardStatsList]);
 
+  // V11.8: hand-managed accounts that are probably counting transactions from BEFORE their
+  // starting balance — typically bank-synced card-bill payments older than the card data you
+  // entered. Offered on Home as a one-tap fix (with suggestStartDate's date); nothing changes
+  // until you save the date in the account sheet.
+  const ibIssues=useMemo(()=>accs.filter(a=>!isBankAcc(a)&&!a.ibDate).map(a=>{
+    const date=suggestStartDate(a,ctxs);if(!date)return null;
+    const old=ctxs.filter(t=>t.date<date&&(t.accountId===a.id||(t.type==="transfer"&&t.toAccountId===a.id)));
+    if(!old.length)return null;
+    const now=balOf(a),fixed=balOf({...a,ibDate:date});
+    if(Math.abs(fixed-now)<0.005)return null;
+    return {acc:a,date,n:old.length,now:Math.round(now*100)/100,fixed:Math.round(fixed*100)/100};
+  }).filter(Boolean),[accs,ctxs,balOf]);
+
   // V11 Home chart: total balance per day, last 60 days. Transfers move money between
   // own accounts so they cancel at the total level and are skipped. Days before the
   // window are folded into the starting value; days without activity carry forward.
   const balSeries=useMemo(()=>{
     const DAYS=60;
     const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    // V11.8: same per-account rules as balOf(), so the line always ends exactly on your total
+    // balance. Transfers no longer cancel automatically: with starting-balance dates one side
+    // may already be inside that account's starting balance.
     const deltas={};
+    const add=(k,v)=>{deltas[k]=(deltas[k]||0)+v;};
+    const byId=new Map(accs.map(a=>[a.id,a]));
     ctxs.forEach(t=>{
-      const v=parseFloat(t.amount)||0;
-      const d=(t.type==="income"||t.type==="credit")?v:(t.type==="expense"||t.type==="debit")?-v:0;
-      if(d)deltas[t.date]=(deltas[t.date]||0)+d;
+      const v=parseFloat(t.amount)||0;if(!v||!t.date)return;
+      const from=byId.get(t.accountId),to=byId.get(t.toAccountId);
+      const inn=t.type==="income"||t.type==="credit";
+      const out=t.type==="expense"||t.type==="debit"||t.type==="transfer";
+      if(from&&countsFor(from,t)){if(inn)add(t.date,v);else if(out)add(t.date,-v);}
+      if(t.type==="transfer"&&to&&countsFor(to,t))add(t.date,v);
     });
     const dates=Object.keys(deltas).sort();
     const n=new Date(),start=new Date(n);start.setDate(n.getDate()-(DAYS-1));
@@ -704,7 +732,7 @@ export function App(){
     const cred=accForm.kind==="credit";
     // A card's balance is NEGATIVE when you owe — the form asks for the friendly
     // "balance owed" figure, so flip its sign into ib and drop the form-only fields.
-    const {owed,_balMode,_currentBal,...rest}=accForm;
+    const {owed,_balMode,_currentBal,_ibHint,...rest}=accForm;
     // "Balance today" mode: back-calculate the starting balance so the account's COMPUTED
     // current balance equals what the user typed — newIb = oldIb + (target − currentComputed).
     // Lets a user set the right balance without knowing their balance on the first synced day.
@@ -722,8 +750,10 @@ export function App(){
          dueDay:Math.min(Math.max(parseInt(accForm.dueDay)||1,1),31),
          apr:parseFloat(accForm.apr)||0,
          billPayee:(accForm.billPayee||"").trim(),
-         autopay:!!accForm.autopay&&!!accForm.payFromId}
+         autopay:!!accForm.autopay&&!!accForm.payFromId&&!isBankAcc(accs.find(x=>x.id===accForm.payFromId))}
       : {...rest,id:editId||uid(),kind:"cash",ib:cashIb()};
+    // Starting-balance date: hand-managed accounts only (bank accounts are defined by their sync).
+    a.ibDate=editId&&String(editId).startsWith("sb-")?undefined:(accForm.ibDate||undefined);
     sa(editId?accs.map(x=>x.id===editId?{...x,...a}:x):[...accs,a]);
     // Bank accounts: persist balance/name/color to the cloud so they sync to every device you sign in on.
     if(editId&&String(editId).startsWith("sb-"))updateBankAccount(editId,{ib:a.ib,name:a.name,color:a.color}).catch(e=>console.error("cloud account update failed",e));
@@ -743,16 +773,18 @@ export function App(){
     }
   };
   const doEditAcc=a=>{
+    const iss=ibIssues.find(x=>x.acc.id===a.id);
+    const ibF={ibDate:a.ibDate||iss?.date||"",_ibHint:!a.ibDate&&iss?iss:null};
     setAccForm(isCredit(a)
       ? {...iAcc,name:a.name,color:a.color,kind:"credit",ib:String(a.ib),
          owed:String(Math.abs(parseFloat(a.ib)||0)),creditLimit:String(a.creditLimit??""),
          statementDay:String(a.statementDay??""),dueDay:String(a.dueDay??""),
-         apr:a.apr?String(a.apr):"",payFromId:a.payFromId||"",autopay:!!a.autopay,billPayee:a.billPayee||""}
+         apr:a.apr?String(a.apr):"",payFromId:a.payFromId||"",autopay:!!a.autopay,billPayee:a.billPayee||"",...ibF}
       : {...iAcc,name:a.name,color:a.color,kind:"cash",ib:String(a.ib),
          // Bank accounts have synced transactions, so "balance today" is the intuitive way to
          // set them — prefill it with the current computed balance (saving unchanged = no-op).
          _balMode:String(a.id).startsWith("sb-")||String(a.id).startsWith("eb-")?"current":"start",
-         _currentBal:String(getBal(a.id))});
+         _currentBal:String(getBal(a.id)),...ibF});
     setEditId(a.id);setModal("acc");
   };
 
@@ -932,7 +964,13 @@ export function App(){
   // every spend total, so nothing double-counts.
   const payBill=card=>{
     const s=cardStats(card,ctxs);
-    const from=card.payFromId||accs.find(a=>!isCredit(a)&&a.id!==card.id)?.id||"";
+    // V11.8: a bill paid from a BANK-SYNCED account arrives by itself on the next sync (and is
+    // matched to this card). Logging it by hand as well took it off the bank balance twice and
+    // paid the card twice — so for those, point to the bank app instead.
+    const pf=accs.find(a=>a.id===card.payFromId);
+    if(pf&&isBankAcc(pf)){showToast(`Pay it from ${pf.name} in your bank app — it appears here after the next sync`);return;}
+    const from=card.payFromId||accs.find(a=>!isCredit(a)&&!isBankAcc(a)&&a.id!==card.id)?.id||"";
+    if(!from&&accs.some(isBankAcc)){showToast("Pay it in your bank app — it appears here after the next sync");return;}
     setTxForm({...iTx,type:"transfer",amount:String(s.amountDue.toFixed(2)),merchant:`${card.name} bill`,
       category:"transfer",accountId:from,toAccountId:card.id,notes:`Statement of ${s.close}`,date:tod()});
     setEditId(null);setModal("tx");
@@ -945,6 +983,7 @@ export function App(){
     const today=tod(),pend=[];
     accs.filter(isCredit).forEach(c=>{
       if(!c.autopay||!c.payFromId)return;
+      if(isBankAcc(accs.find(a=>a.id===c.payFromId)))return; // bank sync records the real payment
       const s=cardStats(c,ctxs,today);
       if(s.amountDue<=0||s.daysToDue>0||c.lastAutopay===s.close)return;
       pend.push({card:c,close:s.close,amount:s.amountDue});
@@ -1035,6 +1074,7 @@ export function App(){
             assets={assets} creditOwed={creditOwed} dueCards={dueCards} openCard={openCard}
             reviewCount={reviewTxs.length} openReview={()=>setModal("review")}
             balSeries={balSeries} sbUser={sbUser} openBankSync={()=>setModal("banksync")}
+            ibIssues={ibIssues} fixIbIssue={doEditAcc}
             setTab={navTab} setPeopleView={setPeopleView} setAnaView={setAnaView} setDrillCat={setDrillCat} goTxs={goTxs} doEditTx={doEditTx} haptic={haptic}
           />
         )}
