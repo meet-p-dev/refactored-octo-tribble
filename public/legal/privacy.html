@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy · MoneyTrack</title>
+<style>
+:root{color-scheme:light dark;--bg:#f5f5f7;--card:#fff;--txt:#1d1d1f;--txt2:#515154;--txt3:#86868b;--acc:#0a7cff;--line:#e5e5ea}
+@media (prefers-color-scheme:dark){:root{--bg:#000;--card:#1c1c1e;--txt:#f5f5f7;--txt2:#c7c7cc;--txt3:#8e8e93;--acc:#409cff;--line:#2c2c2e}}
+body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+main{max-width:680px;margin:0 auto;padding:40px 22px 80px}
+h1{font-size:28px;letter-spacing:-.5px;margin:0 0 4px}
+h2{font-size:18px;margin:32px 0 8px}
+p,li{color:var(--txt2)}
+ul{padding-left:20px}
+li{margin:4px 0}
+strong{color:var(--txt)}
+a{color:var(--acc)}
+.meta{color:var(--txt3);font-size:14px;margin:0 0 24px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:16px 0}
+</style>
+</head>
+<body>
+<main>
+<h1>Privacy Policy</h1>
+<p class="meta">MoneyTrack · Last updated 13 September 2026</p>
+
+<p>MoneyTrack is a free, non-commercial personal finance app made by one person, Meet Patel (<a href="mailto:patelmeet.2905@gmail.com">patelmeet.2905@gmail.com</a>). He is the data controller under the GDPR. This policy covers the MoneyTrack web app (meet-p-dev.github.io/refactored-octo-tribble) and the MoneyTrack iPhone app.</p>
+
+<div class="box"><strong>Short version.</strong> What you type in stays on your device. If you choose to connect a bank, your bank transactions are stored on a server in the EU so the app can sync them. There are no ads, no analytics and no tracking, and your data is never sold.</div>
+
+<h2>1. Data that stays on your device</h2>
+<p>Everything you add by hand stays on your device: accounts, balances, transactions, categories, budgets, goals, debts, notes and settings.</p>
+<ul>
+<li><strong>Web app:</strong> kept in your browser's local storage for this site.</li>
+<li><strong>iPhone app:</strong> kept in the app's database on your phone.</li>
+<li><strong>App lock:</strong> the web app's passcode is stored in your browser. The iPhone app uses Face ID through iOS. The app never receives your face data.</li>
+<li><strong>Backups:</strong> exporting creates a file on your device. Where you keep it is up to you.</li>
+<li><strong>Notifications</strong> are shown by your own device. No push service is used.</li>
+</ul>
+<p>This data is deleted when you use "Clear all data", clear the site's data in your browser, or delete the iPhone app.</p>
+
+<h2>2. Bank sync (optional)</h2>
+<p>Bank sync is off until you sign in and connect a bank. If you use it:</p>
+<ul>
+<li><strong>Your account:</strong> your email address and password, handled by Supabase Auth. The password is stored hashed and is never visible to us. The same login also works for Heimat, another app by the same developer. MoneyTrack's financial data is kept in separate tables and is never shown in Heimat.</li>
+<li><strong>Connecting your bank:</strong> this goes through Enable Banking Oy (Finland), a licensed account information service provider under PSD2. You log in on your bank's own page. MoneyTrack never sees your bank login details. Access is read-only, so the app cannot make payments. Your bank limits how long the access lasts, after which you are asked to renew it.</li>
+<li><strong>What is stored on the server:</strong> the bank's name and country, the connection status and expiry date, the accounts you chose to share (name, an account reference and the balance you set), and booked transactions from those accounts (date, amount, the payee or merchant text and reference your bank provides, the category, and any notes you add to them).</li>
+<li><strong>Learning settings:</strong> how you classified incoming payments, per-payee statistics, "My share" amounts, and the name you enter so the app can recognise transfers between your own accounts.</li>
+<li><strong>App membership:</strong> a record that your login uses MoneyTrack and when you last used it.</li>
+</ul>
+<p>Transactions are fetched automatically on the server three times a day. The data is stored with Supabase in the EU (Ireland). Access rules make sure only your signed-in account can read your rows.</p>
+<p><strong>Legal basis:</strong> providing the service you asked for (Art. 6(1)(b) GDPR). Connecting a bank is also based on the consent you give your bank, which you can withdraw at any time.</p>
+
+<h2>3. Hosting</h2>
+<p>The web app is a set of static files hosted on GitHub Pages (GitHub, Inc.). GitHub may log your IP address when the page loads. Neither app uses cookies for tracking, analytics tools or advertising.</p>
+
+<h2>4. Who else processes data</h2>
+<ul>
+<li><strong>Supabase</strong>: database and login (EU region).</li>
+<li><strong>Enable Banking</strong>: the connection to your bank.</li>
+<li><strong>GitHub</strong>: hosting the web app.</li>
+</ul>
+<p>Nothing is sold or shared for marketing.</p>
+
+<h2>5. How long data is kept</h2>
+<p>Server data is kept while your account exists. Disconnecting a bank stops new syncing. To delete your account and everything stored on the server, email the address below and it will be done within 30 days. Because the login is shared with Heimat, deleting the login removes it for both apps.</p>
+
+<h2>6. Your rights</h2>
+<p>You can ask for access to, correction of, or deletion of your data. You can also restrict or object to its processing, and receive a copy of it (Settings, Export backup). You can complain to a data protection authority, for example the one where you live.</p>
+
+<h2>7. Children</h2>
+<p>MoneyTrack is not intended for people under 16.</p>
+
+<h2>8. Changes</h2>
+<p>If this policy changes, the new version will be posted here with a new date.</p>
+
+<h2>Contact</h2>
+<p><a href="mailto:patelmeet.2905@gmail.com">patelmeet.2905@gmail.com</a> · <a href="terms.html">Terms of Use</a></p>
+</main>
+</body>
+</html>

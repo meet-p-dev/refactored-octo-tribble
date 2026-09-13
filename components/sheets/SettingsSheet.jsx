@@ -77,6 +77,16 @@ export function SettingsSheet({
             </div>
           ))}
         </div>
+        {/* MoneyTrack's own legal pages (public/legal/) — they cover the web and the iPhone app. */}
+        <div style={{marginBottom:10}}><Label text="Legal"/></div>
+        <div style={{background:T.bg,borderRadius:12,overflow:"hidden",marginBottom:16}}>
+          {[["Privacy policy","privacy"],["Terms of use","terms"]].map(([l,f],i)=>(
+            <a key={f} href={`/refactored-octo-tribble/legal/${f}.html`} target="_blank" rel="noopener" style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 16px",textDecoration:"none",borderTop:i?`1px solid ${T.border}`:"none"}}>
+              <span style={{fontWeight:600,fontSize:15,color:T.txt}}>{l}</span>
+              <span style={{display:"flex",alignItems:"center",transform:"rotate(180deg)"}}>{I.back2(T.txt3)}</span>
+            </a>
+          ))}
+        </div>
         <div style={{padding:"12px 16px",background:dark?"#2d0000":"#ffdede",borderRadius:12}}>
           <div style={{display:"flex",alignItems:"center",gap:6,fontWeight:600,fontSize:14,color:dark?"#ff453a":"#c0392b",marginBottom:4}}>{I.alert(dark?"#ff453a":"#c0392b",15)} Danger zone</div>
           <div style={{fontSize:12,color:dark?"#ff6b6b":"#7f1d1d",marginBottom:10}}>Permanently deletes all your data.</div>

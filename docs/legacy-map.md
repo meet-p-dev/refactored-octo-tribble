@@ -1,3 +1,6 @@
+> **History only.** File map of the pre-Next.js buildless version (now in `legacy-buildless/`).
+> The current web app is described in `CLAUDE.md`; both apps in `core.md`.
+
 # MoneyTrack — File Map
 
 Split into 3 babel files loaded in order by `index.html` (served over HTTP, no build step).

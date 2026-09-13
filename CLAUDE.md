@@ -1,8 +1,11 @@
 # MoneyTrack — project rules (read before any work)
 
 MoneyTrack is a single-page personal-finance web app. EUR / de-DE, mobile-first,
-premium iPhone-grade dark UI. Local-only — all state in `localStorage` under `mt-*` keys.
-No accounts, no backend.
+premium iPhone-grade dark UI. Hand-entered data lives in `localStorage` under `mt-*` keys;
+optional bank sync uses Supabase (see "Accounts & bank sync").
+
+**Start every chat with `core.md`** (purpose + hard rules for the web AND iOS app), then
+`update.md` (recent work) and `todo.md` (open items). Keep all three current.
 
 ## Architecture (Next.js static export — migrated from buildless CDN)
 - **Next.js 16 (App Router), React 19, plain JS/JSX (no TypeScript), static export**
@@ -23,7 +26,7 @@ No accounts, no backend.
 - **The pre-migration buildless version is preserved in `legacy-buildless/`** (index.html,
   js/core.jsx, js/components.jsx, js/app.jsx, old build.sh/deploy.sh) as a reference and
   rollback path. Do not edit it going forward — it's frozen history, not the active app.
-- **Read `MAP.md` first** for the pre-migration file map (still useful for finding where
+- `docs/legacy-map.md` is the pre-migration file map (still useful for finding where
   a given piece of logic originated). The migration plan/rationale lives in
   `/Users/meet/.claude/plans/what-if-we-chaneg-majestic-cray.md` if you need the full
   reasoning behind a structural decision.
@@ -75,6 +78,10 @@ terminal output AND the browser console after every change.
   not in the Bank Sync sheet. The full pipeline, the shared-project caveats and the
   one required dashboard setting are in `docs/password-reset.md` — read it before
   changing anything under `lib/bankSync.js`'s auth half.
+- **Legal pages:** `public/legal/privacy.html` + `terms.html` (served at
+  `/refactored-octo-tribble/legal/…`, linked from Settings → Legal on web and iOS). They
+  cover BOTH MoneyTrack apps; Heimat's are separate in its repo. If data handling changes
+  (new table, new third party), update the privacy page and its date.
 
 ## Verify & deploy
 - Preview: `npm run dev` (or launch.json name `moneytrack-next`, port 3123), open
@@ -89,12 +96,12 @@ terminal output AND the browser console after every change.
   which runs `git rm -rq .` before copying `out/` in — so never commit source to
   `main`, it would be deleted by the next deploy. Excluded from the repo on
   purpose: `bank-sync/` (real transaction exports + the Enable Banking
-  application id), `pre-redesign-backup/`, `MoneyTracker/` (the SwiftUI port has
-  its own repo at ~/Documents/MoneyTracker-iOS), and the thesis files that share
-  this folder.
+  application id). The old `pre-redesign-backup/`, a stale iOS Xcode copy and some
+  thesis files used to sit in this folder; they were moved out on 2026-09-13 (see
+  update.md). The iOS app is its own repo: ~/Documents/MoneyTracker-iOS.
 - Build/deploy is the USER's call. `./build.sh` runs `npm ci && next build` into `out/`.
   `./deploy.sh "msg"` builds + syncs `out/` into the `.deploy/` GitHub Pages clone
   (clearing stale hashed chunks first, touching `.nojekyll` so GH Pages doesn't mangle
   the `_next/` folder) + commits + pushes; bump `VERSION` + `CHANGELOG.md` first.
   **Do NOT deploy unless asked.** Repo: github.com/meet-p-dev/refactored-octo-tribble,
-  branch `main`. Current **V11.6**. (If git is blocked by Xcode: `sudo xcodebuild -license accept`.)
+  branch `main`. Current **V11.8**. (If git is blocked by Xcode: `sudo xcodebuild -license accept`.)
