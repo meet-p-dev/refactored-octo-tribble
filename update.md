@@ -5,13 +5,38 @@ and **iOS** parts, so the next chat knows where things stand.
 
 ---
 
-## Where things stand (13 Sep 2026)
+## Where things stand (24 Sep 2026)
 
-- **Web:** V11.8 is live and `source` is pushed. The new legal pages and Settings → Legal
-  links are committed but **not deployed yet**.
-- **iOS:** Phases 1–4 of copying the web app's features are finished, plus the profile
-  change. It's installed on the user's iPhone. The repo is on GitHub (private).
-- **Next:** see `todo.md`.
+- **Web:** V11.9 is live. The privacy policy and terms are online, so the Settings → Legal
+  links work in both apps.
+- **iOS:** ready for TestFlight. Build 1.0 (1) is archived. The upload is waiting for the
+  user to create the app record in App Store Connect.
+- **Next:** upload the build, then set up TestFlight groups and send it to Beta App Review
+  for external testers. See `todo.md` for the rest.
+
+---
+
+## 24 Sep 2026
+
+### Web app
+- **V11.9:** deployed the legal pages from `6b03d27`. They had been committed but never
+  deployed, so `legal/privacy.html` and `terms.html` returned 404. That broke the
+  Settings → Legal links in both apps, and TestFlight needs a live privacy policy URL.
+  Checked in a local copy of the static export first: the app loads with no console
+  errors and both links return 200.
+
+### iOS app
+- **Getting ready for TestFlight:**
+  - Added an app icon. There wasn't one, and uploads get rejected without it. It's the
+    web's maskable icon redrawn at 1024px.
+  - Set `ITSAppUsesNonExemptEncryption = NO`. The app only uses HTTPS and Keychain, so
+    each build skips the export-compliance question.
+  - Set the Finance category.
+  - The Release archive (1.0, build 1) built and signed.
+- **Upload blocked:** `xcodebuild -exportArchive` (`destination: upload`, the Xcode
+  account, same as Heimat) failed with `missingApp(bundleId: "com.patel.MoneyTracker")`.
+  The user has to create the app in App Store Connect first. Every later upload needs a
+  higher `CURRENT_PROJECT_VERSION`.
 
 ---
 
