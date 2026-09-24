@@ -1,5 +1,9 @@
 # MoneyTrack Changelog
 
+## V11.9 — 2026-09-24 · Privacy policy and terms
+- **MoneyTrack now has its own privacy policy and terms of use.** They cover both the web app and the iPhone app: what stays on your device, what bank sync stores, and that nothing is tracked.
+- **Settings → Legal** links to both pages.
+
 ## V11.8 — 2026-09-13 · Balances that start where you say they start
 - **Fixed: a card (or any hand-managed account) could count old payments twice.** When you typed in a card's balance owed, the app didn't know *which day* that balance was from — so bank-synced bill payments from months earlier were subtracted again, even though they were already inside that number. Every account you manage by hand now has a **starting-balance date** ("Owed on" for cards, "Balance on" for others). Anything older than that date stays in your history and stats but no longer changes the balance.
 - **One-tap fix for existing accounts.** If a card or account is counting entries from before its starting balance, Home shows it with the exact difference ("Should owe 1.066,71 €, not 650,91 €"). Tap Fix and the date is already filled in — for cards, the day after the statement before your first purchase — so you only press Save.
