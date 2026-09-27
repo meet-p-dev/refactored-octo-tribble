@@ -17,6 +17,48 @@ and **iOS** parts, so the next chat knows where things stand.
 
 ---
 
+## 27 Sep 2026 (night): weekly reminder, Phase 6 bank notifications
+
+### iOS app
+- **Statement reminder is weekly** (Sundays 18:00); export steps say "last 30 days" (overlaps
+  are fine, nothing is added twice). An existing monthly reminder is replaced on next launch.
+- **Bank notifications (Phase 6, iOS 27):** new action "Log a bank notification" for the Shortcuts
+  Notification automation. `Core/NoteParser.swift` reads amount, currency, direction and payee
+  from the text; money in never counts as income by itself ("Received"). Payments go through
+  the same Tap & Settle engine (the matcher now knows money in vs out). A Wallet tap and the
+  bank's notification for the same purchase are folded into one.
+- **Verified:** 14 parser cases (Sparkasse Karten-/Umsatz-/Gehaltswecker, Revolut, Wallet,
+  Privatmodus, balance and code messages); simulator: a Revolut notification → link app →
+  pending; a same-amount REWE tap stays separate; a Lidl tap folds into the Lidl notification.
+  Replay still 19/19. Test data removed.
+- **Still to confirm on the iPhone (iOS 27):** does the Notification automation run without
+  asking, and what do Sparkasse/Revolut notifications really say? The log in Settings →
+  Bank notifications shows it.
+
+---
+
+## 27 Sep 2026 (evening): Statement Drop, Phase 2 finished
+
+### iOS app
+- **More formats:** Excel (.xlsx, own small ZIP reader) and PDF statements (PDFKit text; a line
+  that starts with a date and ends with an amount; on a card statement a plain amount is a
+  charge and "-" is a payment). Tested on made-up Revolut Excel and Advanzia-style PDF files.
+  **Needs a real Advanzia PDF to tune.**
+- **Open in MoneyTrack:** banking apps and Files can share CSV, Excel, PDF, camt and MT940 to the
+  app (document types in `Config/MoneyTracker-Info.plist`). Verified: Files → Share → MoneyTrack
+  opens the import.
+- **Your banks** (Settings, and a new "Choose your banks" step on Home): pick your banks, see
+  how each gets in (Apple Pay every day, the statement once a month) with the export steps,
+  optional monthly reminder (local notification, 3rd at 18:00).
+- **Balance check that stays:** each import saves the statement's closing balance; Home says
+  "X differs from its statement" if the account drifts, with a confirmed one-tap fix.
+- Simulator: PDF import into a test card (5 added), difference shown, Home alert, fix; share
+  sheet; banks screen. All test data removed; simulator back to 175,11 €.
+- Noted: adding a second credit card makes Sparkasse bill payments stop auto-matching to
+  Advanzia unless each card has its "bill payee" set (existing web logic, unchanged).
+
+---
+
 ## 27 Sep 2026 (later): Statement Drop, Phase 2 (first part)
 
 ### iOS app
