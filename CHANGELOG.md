@@ -1,5 +1,8 @@
 # MoneyTrack Changelog
 
+## V11.10 — 2026-09-27 · Privacy policy: Apple Pay payments
+- **The privacy policy now covers Apple Pay payments in the iPhone app.** If you turn on the Shortcuts automation, each in-store Apple Pay payment (merchant, amount, card name) is passed to MoneyTrack on your phone and stays there. Nothing of it goes to a server.
+
 ## V11.9 — 2026-09-24 · Privacy policy and terms
 - **MoneyTrack now has its own privacy policy and terms of use.** They cover both the web app and the iPhone app: what stays on your device, what bank sync stores, and that nothing is tracked.
 - **Settings → Legal** links to both pages.

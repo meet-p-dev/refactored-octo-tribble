@@ -5,14 +5,42 @@ and **iOS** parts, so the next chat knows where things stand.
 
 ---
 
-## Where things stand (24 Sep 2026)
+## Where things stand (27 Sep 2026)
 
-- **Web:** V11.9 is live. The privacy policy and terms are online, so the Settings → Legal
-  links work in both apps.
-- **iOS:** ready for TestFlight. Build 1.0 (1) is archived. The upload is waiting for the
-  user to create the app record in App Store Connect.
-- **Next:** upload the build, then set up TestFlight groups and send it to Beta App Review
-  for external testers. See `todo.md` for the rest.
+- **Web:** V11.10 is live, with the Apple Pay paragraph in the privacy policy.
+- **iOS:** TestFlight build 1.0 (1) is uploaded. Phase 1 of "Tap & Settle" (Apple Pay taps that
+  settle into bank rows) is built, checked in the simulator and pushed (`708ff70`).
+- **Next:** the user tests real taps per card (Settings → Apple Pay payments → "What Wallet
+  sent"), sends the three Phase 0 emails, then Phase 2 (statement import). The full plan is
+  in the iOS session notes ("Tap & Settle").
+
+---
+
+## 27 Sep 2026
+
+### iOS app: Tap & Settle, Phase 1
+- **What it does:** a Shortcuts Wallet automation calls the new App Intent "Log Apple Pay
+  payment" (background, no dialog) after each in-store Apple Pay tap.
+  - On a bank-synced account the tap waits as "pending" next to the balance, never inside it.
+    When the bank books the purchase, the matcher (`Core/Fusion.swift`, iOS only) pairs them
+    and the bank's row wins.
+  - On a hand-managed account (Advanzia, cash) the tap becomes a normal expense at once.
+  - Unsure pairs ask "Same purchase?" once; a tap the bank never books (feed complete past it)
+    becomes "not booked" (not charged / pick the bank row / paid another way).
+- **Matching:** gates (account, direction, date window, amount with tip/hold/FX bands), a
+  log-odds score (name, amount, the till time German banks put in card rows, card words, lag),
+  one-to-one assignment, learning of aliases, booking lag, tips and FX. Local only.
+- **Verified:**
+  - swiftc replay of the July Sparkasse export: 19/19 card rows settle, 0 false merges, a
+    declined tap becomes an orphan, a same-amount transfer is never merged; also with taps
+    delivered 3.5 h late.
+  - Simulator: link card, "Same purchase?" → matched, pending line, hand-managed expense,
+    duplicate tap ignored, Remove. Numbers unchanged afterwards (175,11 € etc.).
+- **Phase 0:** the developer account is an individual account. Email drafts for the FinTS
+  registration, Enable Banking and the International Office are with the user.
+
+### Web app
+- **V11.10:** `public/legal/privacy.html` gets an Apple Pay paragraph (on-device only). Deployed.
 
 ---
 
