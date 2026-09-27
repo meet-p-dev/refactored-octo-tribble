@@ -8,11 +8,37 @@ and **iOS** parts, so the next chat knows where things stand.
 ## Where things stand (27 Sep 2026)
 
 - **Web:** V11.10 is live, with the Apple Pay paragraph in the privacy policy.
-- **iOS:** TestFlight build 1.0 (1) is uploaded. Phase 1 of "Tap & Settle" (Apple Pay taps that
-  settle into bank rows) is built, checked in the simulator and pushed (`708ff70`).
+- **iOS:** TestFlight build 1.0 (3) is uploaded (Tap & Settle + statement import, `ee0d866`).
+  Build 2 failed processing: App Intent text may not contain "Apple" (error 90626), so the
+  action is now "Log a Wallet payment".
 - **Next:** the user tests real taps per card (Settings → Apple Pay payments → "What Wallet
   sent"), sends the three Phase 0 emails, then Phase 2 (statement import). The full plan is
   in the iOS session notes ("Tap & Settle").
+
+---
+
+## 27 Sep 2026 (later): Statement Drop, Phase 2 (first part)
+
+### iOS app
+- **Build 1.0 (2) failed processing** (90626: the intent was called "Log Apple Pay payment").
+  Renamed to "Log a Wallet payment" and uploaded as **build 1.0 (3)**, which also has the import.
+- **Import a bank statement** (Settings): CSV from Revolut, Sparkasse, DKB, ING, N26 and any bank
+  with a date and an amount column (Latin-1 or UTF-8, `;` `,` or tab), camt.052/053 and MT940.
+  - Hand-managed account: file rows come in as bank rows. Apple Pay taps and rows you typed are
+    confirmed in place (the bank's amount and date win), transfers you already have (a card bill
+    paid from Sparkasse) are linked, pending and reversed rows are skipped, the Revolut fee is
+    its own row. Importing the same file again adds nothing (fingerprints with occurrence count).
+  - Bank-synced account: cross-check only ("In your file, not in your bank sync"), nothing added.
+  - After import: the balance on the statement's last day is checked against its closing
+    balance, with a one-tap "change the starting balance to match".
+- **Verified:** swiftc tests on made-up files in each format; simulator: cross-check on the
+  synced Revolut account, import into a test account (5 added, balance matches 107,87 €),
+  re-import (5 already imported). Test data removed afterwards.
+- **Not done yet:** Advanzia PDF and Excel files (need real samples), "Open in MoneyTrack" from
+  other apps, the monthly reminder and the "Which banks do you use?" planner.
+- **Heads-up:** at 09:33 the stale June copy (`~/Documents/MoneyTrack Archive/ios-xcode-copy-stale-2026-06`)
+  was built into the iPhone 17 Pro simulator and rewrote its database with the old schema.
+  The simulator was restored from the 13 Sep backup. Don't build that copy.
 
 ---
 
