@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { fetchSplitlife, matchBills, shareRows, matchPayments, recordUrl, SPLITLIFE_URL } from "@/lib/splitlife";
 import { CATS, DEFACCS, CURRENCIES, LT, DK } from "@/lib/constants";
 import { LS, fmt, uid, tod, personalAmt, haptic, setCurrencyId, notify, MT_VERSION } from "@/lib/utils";
 import { isCredit, cardStats, looksLikeCardBill, countsFor, isBankAcc, suggestStartDate } from "@/lib/credit";
@@ -56,6 +57,9 @@ export function App(){
   const [drillCat,setDrillCat]   =useState(null);
   const [ready,setReady]         =useState(false);
   const [toast,setToast]         =useState(null);
+  // Splitlife link (lib/splitlife.js): your shares and balances there, when it's the same account
+  const [slData,setSlData]       =useState(null);
+  const [slDone,setSlDone]       =useState(()=>LS.g("mt-sl-done")||{});
   const [budgets,setBudgets]     =useState({});
   const [pin,setPin]             =useState(null);
   const [locked,setLocked]       =useState(false);
@@ -229,16 +233,28 @@ export function App(){
     });
     setBankConns(conns);
   }catch(e){console.error("bank fetch failed",e);}};
+  // a little over a year of Splitlife, refreshed with the bank and when you come back to the app
+  const loadSplitlife=async()=>{
+    const d=new Date();d.setDate(d.getDate()-400);
+    const from=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    try{setSlData(await fetchSplitlife(from));}catch(e){console.warn("splitlife link failed",e);}
+  };
+  useEffect(()=>{
+    if(!sbUser)return;
+    const onVis=()=>{if(document.visibilityState==="visible")loadSplitlife();};
+    document.addEventListener("visibilitychange",onVis);
+    return()=>document.removeEventListener("visibilitychange",onVis);
+  },[sbUser]);
   useEffect(()=>{
     let unsub=null,offAuth=null;
     const startLive=()=>{if(!unsub)unsub=subscribeTx(tx=>{mergeBank([],[tx]);notify("MoneyTrack — new transaction",`${tx.merchant||"Bank transaction"} · ${fmt(tx.amount)}`);});};
-    currentUser().then(u=>{setSbUser(u);if(u){refreshBank();syncPrefsFromCloud();startLive();}});
+    currentUser().then(u=>{setSbUser(u);if(u){refreshBank();syncPrefsFromCloud();startLive();loadSplitlife();}});
     offAuth=onAuthChange((u,event)=>{
       // Arriving via a password-reset link: force the "set a new password" screen instead
       // of treating the temporary recovery session as a normal sign-in.
       if(event==="PASSWORD_RECOVERY"){setRecoveryMode(true);setSbUser(u);setModal("banksync");return;}
       setSbUser(u);
-      if(u){refreshBank();syncPrefsFromCloud();startLive();}else if(unsub){unsub();unsub=null;}
+      if(u){refreshBank();syncPrefsFromCloud();startLive();loadSplitlife();}else{setSlData(null);if(unsub){unsub();unsub=null;}}
     });
     return ()=>{if(unsub)unsub();if(offAuth)offAuth();};
   },[]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -346,7 +362,7 @@ export function App(){
       if(named)return {id:named.id};
       return allCards.length===1?{id:allCards[0].id}:null;
     };
-    return txs.map(t=>{
+    const base=txs.map(t=>{
       const c=res.get(t.id);
       const ov=shareOverrides[t.id];
       // Your own choice beats auto-matching: if you set this row to something other than a
@@ -383,7 +399,34 @@ export function App(){
       if(ov!=null)next._shareAmt=parseFloat(ov)||0;
       return next;
     });
-  },[txs,ownerName,payeeStats,txDecisions,shareOverrides,accs]);
+    if(!slData)return base;
+    // Splitlife (lib/splitlife.js): your share of bills you paid, paying people back, and your
+    // share of bills others paid — your own choices (My share, a type you picked) always win
+    const cur=(CURRENCIES.find(c=>c.id===curId)||{}).cur||"EUR";
+    const bills=matchBills(base,slData.feed,cur);
+    const pays=matchPayments(base,slData.feed,slData.pairs,cur);
+    const out=base.map(t=>{
+      const b=bills.get(t.id),p=pays.get(t.id);
+      if(!b&&!p)return t;
+      const next={...t};
+      if(b&&shareOverrides[t.id]==null){next._shareAmt=Number(b.my_share)/100;next._slBill=b.description||b.place_name||"Splitlife";}
+      if(p&&!b&&!txDecisions[t.id]){
+        if(next._rawType==null)next._rawType=t.type;
+        if(next._rawCat==null)next._rawCat=t.category;
+        next.type=p.direction==="out"?"debit":"credit";next.category="debt";next._needsReview=false;
+        next._clsReason=p.direction==="out"?`Paid ${p.name} back (Splitlife)`:`${p.name} paid you back (Splitlife)`;
+        next._slPay=p;
+      }
+      return next;
+    });
+    return [...out,...shareRows(slData.feed,cur)];
+  },[txs,ownerName,payeeStats,txDecisions,shareOverrides,accs,slData,curId]);
+  // payments matched to a Splitlife debt that aren't in Splitlife yet — offered to record there
+  const slPrompts=useMemo(()=>ctxs.filter(t=>t._slPay&&!t._slPay.recorded&&!slDone[t.id]),[ctxs,slDone]);
+  const slRecord=t=>{
+    window.open(recordUrl(t._slPay),"_blank");
+    setSlDone(d=>{const n={...d,[t.id]:1};LS.s("mt-sl-done",n);return n;});
+  };
 
   // Bank credits the classifier isn't sure about — surfaced in the Review inbox. Excluded
   // from income until you confirm (they sit as neutral "credit" meanwhile).
@@ -715,6 +758,8 @@ export function App(){
   // internal overlay fields so they don't get written back onto the saved transaction, and
   // seed the "my share" field from the current effective share (auto-netted or manual).
   const doEditTx=t=>{
+    // a share of a Splitlife bill someone else paid: it lives in Splitlife
+    if(t._virtual){showToast("Your share of a Splitlife bill — change it in Splitlife");window.open(SPLITLIFE_URL,"_blank");return;}
     const{_rawType,_rawCat,_needsReview,_clsReason,_conf,_suggest,_key,_shareAmt,...clean}=t;
     const share=_shareAmt!=null&&_shareAmt!==(parseFloat(t.amount)||0)?String(_shareAmt):"";
     // _catTouched: editing an existing tx must never auto-rewrite the category you already chose.
@@ -1073,6 +1118,7 @@ export function App(){
             insights={insights} chartD={chartD} recTxs={recTxs} getCat={getCat} goals={goals} catD={catD} mxCat={mxCat}
             assets={assets} creditOwed={creditOwed} dueCards={dueCards} openCard={openCard}
             reviewCount={reviewTxs.length} openReview={()=>setModal("review")}
+            slPrompts={slPrompts} slRecord={slRecord}
             balSeries={balSeries} sbUser={sbUser} openBankSync={()=>setModal("banksync")}
             ibIssues={ibIssues} fixIbIssue={doEditAcc}
             setTab={navTab} setPeopleView={setPeopleView} setAnaView={setAnaView} setDrillCat={setDrillCat} goTxs={goTxs} doEditTx={doEditTx} haptic={haptic}

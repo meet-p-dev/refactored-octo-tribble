@@ -1,5 +1,11 @@
 # MoneyTrack Changelog
 
+## V11.11 — 2026-10-02 · Splitlife, linked
+- **Your shared bills count as what they cost you.** If you use Splitlife (the shared-bills app) with the same account, a bank payment for a bill you paid there now counts only your share as your spending — no need to set My share by hand. A My share you set yourself still wins.
+- **Bills someone else paid show up too**, as your share in the right category (groceries, dining, rent…). They don't touch any account balance.
+- **Paying people back isn't spending.** A bank transfer to or from someone you share bills with, for the amount you owe each other, is now labelled Debt / Loan instead of an expense or income.
+- **Record it in Splitlife too.** If that payment isn't in Splitlife yet, Home asks once and opens Splitlife with the person and amount filled in — you confirm there.
+
 ## V11.10 — 2026-09-27 · Privacy policy: Apple Pay payments
 - **The privacy policy now covers Apple Pay payments in the iPhone app.** If you turn on the Shortcuts automation, each in-store Apple Pay payment (merchant, amount, card name) is passed to MoneyTrack on your phone and stays there. Nothing of it goes to a server.
 

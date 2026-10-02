@@ -71,6 +71,13 @@ terminal output AND the browser console after every change.
   one set of auth email templates. MoneyTrack owns the `mt_*` tables; Heimat owns
   `flats`/`flat_*`/`expenses`/`settlements`/`push_subscriptions`; `app_users` records
   which app an account belongs to. Never touch Heimat's tables from here.
+- **Splitlife link** (Heimat is now called Splitlife; `lib/splitlife.js`): MoneyTrack calls
+  Splitlife's read-only RPCs `splitlife_feed(p_from)` and `my_pairwise()` — never its
+  tables — and only changes the derived `ctxs` layer: My share for Splitlife bills you paid,
+  read-only share rows (`sl:<id>`, no account) for bills others paid, and bank payments
+  that pay someone back labelled Debt / Loan. An unrecorded one gets a Home prompt that
+  opens Splitlife's `?settle=` link. If the RPCs fail or the user isn't on Splitlife,
+  nothing changes.
 - Sessions are namespaced (`mt-sb-auth`) because both apps live on the same
   GitHub Pages origin. Do not drop that storageKey — it is what keeps a Heimat
   sign-in from evicting a MoneyTrack one.
@@ -104,4 +111,4 @@ terminal output AND the browser console after every change.
   (clearing stale hashed chunks first, touching `.nojekyll` so GH Pages doesn't mangle
   the `_next/` folder) + commits + pushes; bump `VERSION` + `CHANGELOG.md` first.
   **Do NOT deploy unless asked.** Repo: github.com/meet-p-dev/refactored-octo-tribble,
-  branch `main`. Current **V11.10**. (If git is blocked by Xcode: `sudo xcodebuild -license accept`.)
+  branch `main`. Current **V11.11**. (If git is blocked by Xcode: `sudo xcodebuild -license accept`.)

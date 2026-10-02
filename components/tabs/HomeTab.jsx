@@ -18,7 +18,7 @@ export function HomeTab({
   safeToday,daysLeft,totalBudget,totalBudgetSpent,overBudget,
   insights,chartD,recTxs,getCat,goals,catD,mxCat,
   assets,creditOwed,dueCards,openCard,
-  reviewCount,openReview,
+  reviewCount,openReview,slPrompts=[],slRecord,
   balSeries,sbUser,openBankSync,ibIssues,fixIbIssue,
   setTab,setPeopleView,setAnaView,setDrillCat,goTxs,doEditTx,haptic,
 }){
@@ -54,6 +54,13 @@ export function HomeTab({
     title:`Card bill overdue · ${fmt(overdueCards.reduce((s,c)=>s+c.amountDue,0))}`,
     sub:overdueCards.length===1?`${overdueCards[0].card.name} · ${Math.abs(overdueCards[0].daysToDue)}d late — tap to pay`:`${overdueCards.length} cards late — tap to pay`,
     cta:"Pay",onTap:()=>openCard(overdueCards[0].card.id),
+  });
+  // a bank payment that pays someone back, not yet in Splitlife (lib/splitlife.js)
+  for(const t of slPrompts.slice(0,2))alerts.push({
+    k:"sl-"+t.id,tone:T.acc,icon:I.swap,
+    title:t._slPay.direction==="out"?`Paid ${t._slPay.name} back ${fmt(t._slPay.amount)}?`:`${t._slPay.name} paid you back ${fmt(t._slPay.amount)}?`,
+    sub:"Record it in Splitlife too, so the balance there is right",
+    cta:"Record",onTap:()=>slRecord(t),
   });
   if(reviewCount>0)alerts.push({
     k:"review",tone:T.acc,icon:I.bell,

@@ -56,7 +56,10 @@ the two disagree on a number, the web app is right and the iOS port gets fixed.
    every synced row. A user edit only changes its meaning (type, category, merchant, notes).
 2. **A bank credit is not income.** The classifier decides income / received / sent out.
    Never go back to "every credit is income".
-3. **"My share" is manual.** Never re-add automatic rent netting.
+3. **"My share" is manual — except for Splitlife bills.** Never re-add automatic rent netting.
+   Since 2026-10-02 (the owner's decision), a bank payment that is a Splitlife bill you paid
+   takes your Splitlife share as My share automatically; a My share you set yourself always
+   wins (`lib/splitlife.js`).
 4. **Starting-balance date (`ibDate`)** on hand-managed accounts: rows before it stay in
    history but don't move the balance. Bank accounts never get one.
 5. **Card bills are transfers into the card.** They're detected automatically
@@ -66,7 +69,10 @@ the two disagree on a number, the web app is right and the iOS port gets fixed.
 7. **Additive only.** Don't remove a feature without the user's OK. Removals the user
    approved: Recurring and WG splits (→ My share) on iOS, and balance-over-time charts on
    iOS.
-8. **Never touch Heimat** (its tables, repo or folder) from MoneyTrack work.
+8. **Never touch Heimat/Splitlife** (its tables, repo or folder) from MoneyTrack work. The one
+   door is two read-only functions Splitlife made for this, `splitlife_feed` and
+   `my_pairwise` (`lib/splitlife.js`); recording a payment happens in Splitlife (MoneyTrack
+   opens its settle-up with the amount filled in).
 9. **Never commit real financial data**: backups, bank exports, screenshots with real
    numbers, credentials. `bank-sync/` is git-ignored. Delete scratch copies after use.
 10. **Nothing is done until it's verified**: in a real browser for the web app, in the
