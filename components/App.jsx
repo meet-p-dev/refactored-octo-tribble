@@ -1246,6 +1246,7 @@ export function App(){
         modal={modal} closeM={closeM} T={T} dark={dark} fileRef={fileRef} doImport={doImport} doExport={doExport} exportCSV={exportCSV} setTab={navTab} setAnaView={setAnaView} setModal={setModal} sbUser={sbUser}
         curId={curId} setCur={setCur} pin={pin} setPinFlow={setPinFlow} notifOn={notifOn} setNotif={setNotif}
         txs={txs} accs={accs} goals={goals} debts={debts} recurring={recurring} sa={sa} st={st} sg={sg} sr={sr} sd={sd} sb={sb} setOnbDone={setOnbDone} showToast={showToast}
+        onSplitlifeChanged={loadSplitlife}
       />
 
       <BankSyncSheet

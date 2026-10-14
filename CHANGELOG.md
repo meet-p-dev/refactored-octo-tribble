@@ -1,5 +1,9 @@
 # MoneyTrack Changelog
 
+## V11.12 — 2026-10-15 · Splitlife on a different email
+- **Link your Splitlife account, even with another email.** Settings → Splitlife → Link: sign in to Splitlife once and your shared bills count as your share here, exactly as with one email. MoneyTrack only reads your shares and who owes whom — it can't change anything in Splitlife, and keeps no Splitlife password.
+- **Unlink any time** in the same place.
+
 ## V11.11 — 2026-10-02 · Splitlife, linked
 - **Your shared bills count as what they cost you.** If you use Splitlife (the shared-bills app) with the same account, a bank payment for a bill you paid there now counts only your share as your spending — no need to set My share by hand. A My share you set yourself still wins.
 - **Bills someone else paid show up too**, as your share in the right category (groceries, dining, rent…). They don't touch any account balance.

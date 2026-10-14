@@ -6,11 +6,13 @@ import { I } from "@/lib/icons";
 import { Sheet } from "@/components/Sheet";
 import { Label } from "@/components/Label";
 import { Toggle } from "@/components/Toggle";
+import { useState, useEffect } from "react";
+import { splitlifeLink, linkSplitlife, unlinkSplitlife } from "@/lib/splitlife";
 
 export function SettingsSheet({
   modal,closeM,T,dark,fileRef,doImport,doExport,exportCSV,setTab,setAnaView,setModal,sbUser,
   curId,pin,setPinFlow,notifOn,setNotif,
-  txs,accs,goals,debts,recurring,sa,st,sg,sr,sd,sb,setOnbDone,showToast,
+  txs,accs,goals,debts,recurring,sa,st,sg,sr,sd,sb,setOnbDone,showToast,onSplitlifeChanged,
 }){
   const cur=CURRENCIES.find(c=>c.id===curId)||CURRENCIES[0];
   const curExample=new Intl.NumberFormat(cur.loc,{style:"currency",currency:cur.cur}).format(1234.56);
@@ -26,6 +28,7 @@ export function SettingsSheet({
           </div>
           <div style={{width:9,height:9,borderRadius:99,background:sbUser?T.green:T.txt3,flexShrink:0}}/>
         </button>
+        <SplitlifeLink T={T} open={modal==="settings"} sbUser={sbUser} showToast={showToast} onChanged={onSplitlifeChanged}/>
         <div style={{marginBottom:10}}><Label text="Data Backup"/></div>
         <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
           <button onClick={doExport} style={{display:"flex",alignItems:"center",gap:12,background:T.bg,border:`1.5px solid ${T.border}`,borderRadius:12,padding:"15px 16px",cursor:"pointer",textAlign:"left"}}>
@@ -96,4 +99,52 @@ export function SettingsSheet({
         <div style={{height:16}}/>
       </Sheet>
   );
+}
+
+/* Splitlife on a different email: link it once, so shared bills count as your share here.
+   (Same email in both apps needs nothing — it's linked already.) */
+function SplitlifeLink({T,open,sbUser,showToast,onChanged}){
+  const [link,setLink]=useState(undefined); // undefined: loading, null: none
+  const [form,setForm]=useState(false);
+  const [email,setEmail]=useState("");const [pw,setPw]=useState("");
+  const [busy,setBusy]=useState(false);const [err,setErr]=useState("");
+  useEffect(()=>{if(open&&sbUser)splitlifeLink().then(setLink);},[open,sbUser]);
+  const box={display:"flex",alignItems:"center",gap:12,width:"100%",background:T.bg,border:`1.5px solid ${T.border}`,borderRadius:12,padding:"15px 16px",textAlign:"left"};
+  const fld={width:"100%",padding:"12px 14px",borderRadius:10,border:`1.5px solid ${T.border}`,background:T.card||T.bg,color:T.txt,fontSize:15,boxSizing:"border-box"};
+  const doLink=async()=>{
+    setBusy(true);setErr("");
+    try{await linkSplitlife(email,pw);setPw("");setForm(false);setLink(await splitlifeLink());showToast("Splitlife linked",false);onChanged?.();}
+    catch(e){setErr(e.message);}
+    setBusy(false);
+  };
+  const doUnlink=async()=>{
+    if(!confirm("Unlink Splitlife? MoneyTrack stops reading your shared bills."))return;
+    try{await unlinkSplitlife();setLink(null);showToast("Splitlife unlinked",false);onChanged?.();}catch(e){showToast(e.message,true);}
+  };
+  return(<>
+    <div style={{marginBottom:10}}><Label text="Splitlife"/></div>
+    <div style={{...box,flexDirection:"column",alignItems:"stretch",marginBottom:20,gap:10}}>
+      <div style={{display:"flex",alignItems:"center",gap:12}}>
+        <div style={{width:40,height:40,borderRadius:12,background:T.green+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontWeight:800,color:T.green}}>S</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontWeight:600,fontSize:15,color:T.txt}}>{link?"Splitlife linked":"Link Splitlife"}</div>
+          <div style={{fontSize:12,color:T.txt2,marginTop:1,overflow:"hidden",textOverflow:"ellipsis"}}>
+            {!sbUser?"Sign in to MoneyTrack first":link?link.email:"Using a different email for Splitlife? Link it here."}
+          </div>
+        </div>
+        {sbUser&&link&&<button onClick={doUnlink} style={{background:"none",border:"none",color:T.red||"#c0392b",fontWeight:600,fontSize:14,cursor:"pointer"}}>Unlink</button>}
+        {sbUser&&link===null&&!form&&<button onClick={()=>setForm(true)} style={{background:T.acc,color:"#fff",border:"none",borderRadius:10,padding:"8px 14px",fontWeight:600,fontSize:14,cursor:"pointer"}}>Link</button>}
+      </div>
+      {form&&<>
+        <input type="email" autoComplete="username" placeholder="Splitlife email" value={email} onChange={e=>setEmail(e.target.value)} style={fld}/>
+        <input type="password" autoComplete="current-password" placeholder="Splitlife password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&email&&pw&&!busy)doLink();}} style={fld}/>
+        {err&&<div style={{fontSize:13,color:T.red||"#c0392b"}}>{err}</div>}
+        <div style={{display:"flex",gap:10}}>
+          <button disabled={busy||!email||!pw} onClick={doLink} style={{flex:1,background:T.acc,color:"#fff",border:"none",borderRadius:10,padding:"11px 14px",fontWeight:600,fontSize:15,cursor:"pointer",opacity:busy||!email||!pw?0.6:1}}>{busy?"Linking…":"Link account"}</button>
+          <button onClick={()=>{setForm(false);setErr("");setPw("");}} style={{background:"none",border:`1.5px solid ${T.border}`,borderRadius:10,padding:"11px 14px",fontWeight:600,fontSize:15,color:T.txt,cursor:"pointer"}}>Cancel</button>
+        </div>
+        <div style={{fontSize:12,color:T.txt2,lineHeight:1.45}}>MoneyTrack then reads only your shares and who owes whom in Splitlife — it can&rsquo;t change anything there, and keeps no Splitlife password. Unlink any time.</div>
+      </>}
+    </div>
+  </>);
 }
